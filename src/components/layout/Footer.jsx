@@ -14,7 +14,16 @@ export default function Footer() {
           <a href="/contact" className="hover:text-white transition">Contact</a>
         </div>
 
-        <p>© 2025 NexOrbit. All rights reserved.</p>
+        <div className="flex flex-col items-center md:items-end gap-1">
+          <p>© 2025 NexOrbit. All rights reserved.</p>
+          <p className="text-xs text-gray-600">
+            Co-founded by{" "}
+            <span className="text-gray-400 font-medium">Karan</span>
+            {" "}&{" "}
+            <span className="text-gray-400 font-medium">Aryan</span>
+          </p>
+        </div>
+
       </div>
     </footer>
   );
