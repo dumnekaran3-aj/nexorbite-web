@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
+
 import api from "../lib/api";
 
+import { useContext } from "react";
+import { Link } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+
 export default function Home() {
+
+  const { user } = useContext(AuthContext);
+
   const [stats, setStats] = useState({ totalUsers: 0, totalCommunities: 0 });
   const [products, setProducts] = useState([]);
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+const [inviteCode, setInviteCode] = useState("");
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,37 +37,74 @@ export default function Home() {
       }
     };
     fetchData();
+
+
+
+
+
   }, []);
 
 
-  return (
-    <div className="bg-black text-white min-h-screen">
-      <Navbar />
+  const joinCommunity = async () => {
+    try {
+      if (!inviteCode) return alert("Please enter code");
+      
+      const res = await api.post("/api/createcollege/join", { invite_code: inviteCode });
+      alert("Joined successfully!");
+      setShowModal(false);
+      window.location.reload(); 
+    } catch (err) {
+      alert(err.response?.data?.msg || "Failed to join");
+    }
+  };
 
-      {/* ── HERO ── */}
-      <section className="min-h-screen flex flex-col items-center justify-center text-center px-4 pt-20">
+
+
+
+  return (
+ <div className="bg-black text-white min-h-screen">
+      
+      {/* ── NAVBAR (Fix: Added max-w-7xl and flex-shrink-0 for the button) ── */}
+      <nav className="fixed top-0 left-0 w-full z-[100] bg-black/80 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+          <div className="text-xl sm:text-2xl font-bold tracking-tight">NexOrbite</div>
+          
+          {/* Sign In Button: Added flex-shrink-0 to prevent hiding */}
+{user ? (
+  <Link to="/profile">
+    <img 
+      src={user.avatar || `https://ui-avatars.com/api/?name=${user.fullName}`} 
+      alt="Profile" 
+      className="w-10 h-10 rounded-full border border-purple-500 object-cover"
+    />
+  </Link>
+) : (
+  <Link to="/login" className="bg-purple-600 px-6 py-2 rounded-full">
+    Sign In
+  </Link>
+)}
+        </div>
+      </nav>
+
+      {/* ── HERO SECTION (Padding top increased to clear fixed navbar) ── */}
+      <section className="flex flex-col items-center justify-center text-center px-4 pt-32 pb-20 min-h-[90vh]">
         <span className="text-purple-400 text-sm font-semibold tracking-widest uppercase mb-4">
           India's First Campus Ecosystem
         </span>
-        <h1 className="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+        <h1 className="text-4xl md:text-7xl font-extrabold leading-tight mb-6">
           Build. Sell. <br />
           <span className="text-purple-500">Collaborate.</span>
         </h1>
-        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10">
-          NexOrbit connects students across colleges — share projects, sell digital
+        <p className="text-gray-400 text-base md:text-xl max-w-2xl mb-10">
+          NexOrbite connects students across colleges — share projects, sell digital
           products, and grow your campus network.
         </p>
+        
         <div className="flex flex-col sm:flex-row gap-4">
-          <a
-            href="#download"
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-4 rounded-full text-lg transition"
-          >
+          <a href="#download" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-4 rounded-full text-lg transition">
             Download App
           </a>
-          <a
-            href="#features"
-            className="border border-white/20 hover:border-purple-500 text-white font-semibold px-8 py-4 rounded-full text-lg transition"
-          >
+          <a href="#features" className="border border-white/20 hover:border-purple-500 text-white font-semibold px-8 py-4 rounded-full text-lg transition">
             Learn More
           </a>
         </div>
@@ -117,7 +164,7 @@ export default function Home() {
           <p className="text-gray-400 mb-16">3 simple steps to get started</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: "01", title: "Download App", desc: "Get NexOrbit from Play Store for free." },
+              { step: "01", title: "Download App", desc: "Get NexOrbite from Play Store for free." },
               { step: "02", title: "Join Your College", desc: "Use invite code to join your campus community." },
               { step: "03", title: "Build & Earn", desc: "Share projects, sell products, collaborate." },
             ].map((s) => (
@@ -130,8 +177,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ── TRENDING PRODUCTS ── */}
+   {/* ── TRENDING PRODUCTS ── */}
       <section id="marketplace" className="py-24 px-4 max-w-7xl mx-auto">
         <h2 className="text-4xl font-bold text-center mb-4">Trending Products</h2>
         <p className="text-gray-400 text-center mb-16">Top selling student work right now</p>
@@ -168,40 +214,68 @@ export default function Home() {
           </div>
         )}
       </section>
+   
 
-      {/* ── TRENDING COMMUNITIES ── */}
-      <section id="community" className="py-24 px-4 bg-white/5">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-4">Trending Communities</h2>
-          <p className="text-gray-400 text-center mb-16">Active college communities on NexOrbit</p>
-          {loading ? (
-            <p className="text-center text-gray-500">Loading...</p>
-          ) : communities.length === 0 ? (
-            <p className="text-center text-gray-500">No communities yet</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {communities.map((c) => (
-                <div
-                  key={c._id}
-                  className="bg-black border border-white/10 rounded-2xl p-6 hover:border-purple-500 transition"
-                >
-                  <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold mb-4">
-                    {c.college_name?.[0] || "C"}
-                  </div>
-                  <h3 className="text-white font-semibold text-lg mb-1 truncate">
-                    {c.college_name}
-                  </h3>
-                  <p className="text-gray-500 text-sm mb-3">{c.university}</p>
-                  <p className="text-gray-400 text-sm line-clamp-2">{c.description}</p>
-                  <p className="text-purple-400 text-sm font-semibold mt-3">
-                    {c.usageCount} members
-                  </p>
-                </div>
-              ))}
+    {/* ── TRENDING COMMUNITIES ── */}
+<section id="community" className="py-24 px-4 bg-white/5">
+  <div className="max-w-7xl mx-auto">
+    <h2 className="text-4xl font-bold text-center mb-4">Trending Communities</h2>
+    <p className="text-gray-400 text-center mb-16">Active college communities on NexOrbite</p>
+    
+    {loading ? (
+      <p className="text-center text-gray-500">Loading...</p>
+    ) : communities.length === 0 ? (
+      <p className="text-center text-gray-500">No communities yet</p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {communities.map((c) => (
+          <div
+            key={c._id}
+            // FIX: Yahan onClick add kiya hai
+            onClick={() => setShowModal(true)} 
+            className="bg-black border border-white/10 rounded-2xl p-6 hover:border-purple-500 transition cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold mb-4">
+              {c.college_name?.[0] || "C"}
             </div>
-          )}
+            <h3 className="text-white font-semibold text-lg mb-1 truncate">
+              {c.college_name}
+            </h3>
+            <p className="text-gray-500 text-sm mb-3">{c.university}</p>
+            <p className="text-gray-400 text-sm line-clamp-2">{c.description}</p>
+            <p className="text-purple-400 text-sm font-semibold mt-3">
+              {c.usageCount} members
+            </p>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Modal */}
+    {showModal && (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div className="bg-zinc-900 p-6 rounded-xl border border-white/10 w-80">
+          <h3 className="text-white font-bold mb-4">Enter Invite Code</h3>
+          <input 
+            maxLength={8}
+            className="w-full p-2 mb-4 bg-black border border-white/20 rounded text-white"
+            onChange={(e) => setInviteCode(e.target.value)}
+            placeholder="8 Character Code"
+          />
+          <div className="flex gap-2">
+            <button onClick={() => setShowModal(false)} className="px-4 py-2 text-white">Cancel</button>
+            <button 
+              onClick={joinCommunity} 
+              className="px-4 py-2 bg-purple-600 rounded text-white font-bold"
+            >
+              Join
+            </button>
+          </div>
         </div>
-      </section>
+      </div>
+    )}
+  </div>
+</section>
 
       {/* ── DOWNLOAD ── */}
       <section id="download" className="py-24 px-4 text-center">
@@ -209,10 +283,10 @@ export default function Home() {
           Ready to <span className="text-purple-500">Join?</span>
         </h2>
         <p className="text-gray-400 text-lg mb-10 max-w-xl mx-auto">
-          Download NexOrbit and become part of India's fastest growing student ecosystem.
+          Download NexOrbite and become part of India's fastest growing student ecosystem.
         </p>
         <a
-          href="https://play.google.com/store"
+          href="https://play.google.com/store/apps/details?id=com.nexorbite"
           target="_blank"
           rel="noreferrer"
           className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-10 py-4 rounded-full text-lg transition"
@@ -220,8 +294,12 @@ export default function Home() {
           Download on Play Store
         </a>
       </section>
-
-      <Footer />
     </div>
+
+
+
+
+
+
   );
 }
