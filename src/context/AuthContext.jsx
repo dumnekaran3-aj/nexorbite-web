@@ -1,11 +1,17 @@
+<<<<<<< HEAD
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useCallback } from "react";
 import api from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/socket";
+=======
+import { createContext, useState, useEffect } from "react";
+import api from "../lib/api";
+>>>>>>> aa04f50dce9bd5bf29a92c3bccc9e1271a1b257d
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+<<<<<<< HEAD
   const [user, setUser]                   = useState(null);
   const [collegeStatus, setCollegeStatus] = useState(null); // { isJoined, collegeId, collegeName, university, role }
   const [loading, setLoading]             = useState(true);
@@ -41,10 +47,31 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setCollegeStatus(null);
     } finally {
+=======
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Profile status check: kya user ne full name setup kiya hai?
+  const isProfileComplete = (userData) => {
+    return userData && userData.fullName && userData.fullName.length > 0;
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.get("api/profile/me")
+        .then((res) => {
+            setUser(res.data.profile);
+        })
+        .catch(() => setUser(null))
+        .finally(() => setLoading(false));
+    } else {
+>>>>>>> aa04f50dce9bd5bf29a92c3bccc9e1271a1b257d
       setLoading(false);
     }
   }, []);
 
+<<<<<<< HEAD
   useEffect(() => { loadUser(); }, [loadUser]);
 
   // Logout
@@ -84,6 +111,10 @@ export const AuthProvider = ({ children }) => {
         isProfileComplete,
       }}
     >
+=======
+  return (
+    <AuthContext.Provider value={{ user, setUser, loading, isProfileComplete }}>
+>>>>>>> aa04f50dce9bd5bf29a92c3bccc9e1271a1b257d
       {children}
     </AuthContext.Provider>
   );
