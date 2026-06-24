@@ -1,25 +1,21 @@
-<<<<<<< HEAD
-// src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useCallback } from "react";
 import api from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/socket";
-=======
-import { createContext, useState, useEffect } from "react";
-import api from "../lib/api";
->>>>>>> aa04f50dce9bd5bf29a92c3bccc9e1271a1b257d
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-<<<<<<< HEAD
-  const [user, setUser]                   = useState(null);
+  const [user, setUser] = useState(null);
   const [collegeStatus, setCollegeStatus] = useState(null); // { isJoined, collegeId, collegeName, university, role }
-  const [loading, setLoading]             = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Profile + college status ek saath fetch karo
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem("token");
-    if (!token) { setLoading(false); return; }
+    if (!token) { 
+      setLoading(false); 
+      return; 
+    }
 
     try {
       // 1. Profile
@@ -27,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       const profile = profileRes.data.profile;
       setUser(profile);
 
-      // 2. College status — ye batata hai user joined hai ya nahi
+      // 2. College status
       try {
         const collegeRes = await api.get("/api/createcollege/handler");
         if (collegeRes.data?.success) {
@@ -37,42 +33,22 @@ export const AuthProvider = ({ children }) => {
         setCollegeStatus({ isJoined: false });
       }
 
-      // 3. Socket connect karo login ke baad
+      // 3. Socket connect karo
       if (profile?._id) {
         connectSocket(String(profile._id), profile.collegeId ? String(profile.collegeId) : null);
       }
     } catch (err) {
-      // Token expired ya invalid
       localStorage.removeItem("token");
       setUser(null);
       setCollegeStatus(null);
     } finally {
-=======
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Profile status check: kya user ne full name setup kiya hai?
-  const isProfileComplete = (userData) => {
-    return userData && userData.fullName && userData.fullName.length > 0;
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      api.get("api/profile/me")
-        .then((res) => {
-            setUser(res.data.profile);
-        })
-        .catch(() => setUser(null))
-        .finally(() => setLoading(false));
-    } else {
->>>>>>> aa04f50dce9bd5bf29a92c3bccc9e1271a1b257d
       setLoading(false);
     }
   }, []);
 
-<<<<<<< HEAD
-  useEffect(() => { loadUser(); }, [loadUser]);
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
 
   // Logout
   const logout = () => {
@@ -82,12 +58,11 @@ export const AuthProvider = ({ children }) => {
     disconnectSocket();
   };
 
-  // College join ke baad ya kisi bhi update ke baad call karo
+  // Helper functions
   const refreshUser = async () => {
     await loadUser();
   };
 
-  // College status refresh (join ke baad Home.jsx mein use hoga)
   const refreshCollegeStatus = async () => {
     try {
       const res = await api.get("/api/createcollege/handler");
@@ -104,17 +79,13 @@ export const AuthProvider = ({ children }) => {
         user,
         setUser,
         loading,
-        collegeStatus,      // ← Nav + Home.jsx yahi use karein
+        collegeStatus,
         refreshUser,
         refreshCollegeStatus,
         logout,
         isProfileComplete,
       }}
     >
-=======
-  return (
-    <AuthContext.Provider value={{ user, setUser, loading, isProfileComplete }}>
->>>>>>> aa04f50dce9bd5bf29a92c3bccc9e1271a1b257d
       {children}
     </AuthContext.Provider>
   );
