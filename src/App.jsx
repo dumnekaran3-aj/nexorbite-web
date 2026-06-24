@@ -10,7 +10,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Sigup";
 import ProfileSetup from "./pages/ProfileSetup";
 import ProfileView from "./pages/ProfileView";
-import PublicProfile from "./pages/PublicProfile"; // Important: Dono versions se merge karein
+import PublicProfile from "./pages/publicProfile"; // Important: Dono versions se merge karein
 import CommunityView from "./pages/CommunityView";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
