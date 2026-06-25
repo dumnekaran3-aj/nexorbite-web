@@ -1,7 +1,7 @@
 // src/pages/CommunityView.jsx
 // Full community dashboard — real-time chat, friends, feed, suggestions
 
-import { useEffect, useState, useRef, useCallback, useContext } from "react";
+import { useEffect, useState, useRef, useCallback, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
@@ -9,18 +9,18 @@ import { getSocket } from "../lib/socket";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icon = {
-  users:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  friends: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>,
-  inbox:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>,
-  send2:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
-  chat:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  feed:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
-  suggest: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-  check:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="20 6 9 17 4 12"/></svg>,
-  x:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-  back:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><polyline points="15 18 9 12 15 6"/></svg>,
-  shop:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
-  info:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+  users: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
+  friends: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" /></svg>,
+  inbox: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>,
+  send2: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>,
+  chat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
+  feed: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>,
+  suggest: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+  check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="20 6 9 17 4 12" /></svg>,
+  x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+  back: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5"><polyline points="15 18 9 12 15 6" /></svg>,
+  shop: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
+  info: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
 };
 
 // ─── Avatar with click-to-enlarge ─────────────────────────────────────────────
@@ -54,11 +54,11 @@ function ImageModal({ src, name, onClose }) {
 // ─── Role badge ───────────────────────────────────────────────────────────────
 const RoleBadge = ({ role }) => {
   const map = {
-    owner:     "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    owner: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
     principal: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    hod:       "bg-teal-500/20 text-teal-300 border-teal-500/30",
-    teacher:   "bg-green-500/20 text-green-300 border-green-500/30",
-    student:   "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    hod: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+    teacher: "bg-green-500/20 text-green-300 border-green-500/30",
+    student: "bg-purple-500/20 text-purple-300 border-purple-500/30",
   };
   return (
     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${map[role] || map.student}`}>
@@ -69,87 +69,176 @@ const RoleBadge = ({ role }) => {
 
 // ─── REAL-TIME CHAT PANEL ─────────────────────────────────────────────────────
 function ChatPanel({ friend, myId, onClose }) {
-  const [chatId, setChatId]     = useState(null);
+  const [chatId, setChatId] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [text, setText]         = useState("");
-  const [loading, setLoading]   = useState(true);
-  const [typing, setTyping]     = useState(false);
-  const bottomRef               = useRef(null);
-  const typingTimer             = useRef(null);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [typing, setTyping] = useState(false);
+  const bottomRef = useRef(null);
+  const typingTimer = useRef(null);
+  const typingStartTimer = useRef(null);
 
+  // Refs to avoid stale closures in socket callbacks
+  const chatIdRef = useRef(null);
+  const myIdRef = useRef(myId);
+  const friendIdRef = useRef(friend._id);
+  const friendUsernameRef = useRef(friend.username);
+
+// ── Sync refs on every render ───────────────────────────────────────────────
   useEffect(() => {
-    (async () => {
+    myIdRef.current = myId;
+    friendIdRef.current = friend._id;
+    friendUsernameRef.current = friend.username;
+  }, [myId, friend]);
+
+  // ── Init: load chat + join socket room ──────────────────────────────────────
+  useEffect(() => {
+    let mounted = true;
+
+    const initChat = async () => {
+      // 1. Fetch data only if not already fetching
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+      setLoading(true);
+
       try {
-        const r   = await api.get(`/api/ecosystem/chat/direct/${friend._id}`);
-        const id  = r.data.chatId;
+        // Run both parallel tasks
+        await fetchAll();
+
+        const r = await api.get(`/api/ecosystem/chat/direct/${friend._id}`);
+        const id = r.data.chatId;
+        
+        if (!mounted) return;
+
+        chatIdRef.current = id;
         setChatId(id);
+
         const msgs = await api.get(`/api/ecosystem/chat/${id}/messages`);
-        // Messages come newest-first from backend — reverse for display
-        setMessages([...(msgs.data.messages || [])].reverse());
+        if (mounted) setMessages([...(msgs.data.messages || [])].reverse());
+
         await api.put(`/api/ecosystem/chat/${id}/seen`);
 
-        // Join socket room
         const socket = getSocket();
         socket.emit("join_room", { roomType: "chat", roomId: id });
       } catch (e) {
-        console.error("Chat init:", e);
+        console.error("Chat init error:", e);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
+        isFetchingRef.current = false;
       }
-    })();
+    };
 
-    // Socket listeners
+    initChat();
+
+    // ── Socket Logic ──────────────────────────────────────────────────────────
     const socket = getSocket();
 
     const onMessage = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      if (!mounted) return;
+      setMessages((prev) => {
+        if (msg._id && prev.some((m) => m._id === msg._id)) return prev;
+        
+        // Optimistic update replace logic
+        const exists = prev.some((m) => m._tempId && m.text === msg.text);
+        if (exists) {
+          return prev.map((m) => (m._tempId && m.text === msg.text ? { ...msg } : m));
+        }
+        return [...prev, msg];
+      });
       setTyping(false);
     };
+
     const onTyping = ({ username }) => {
-      if (username !== friend.username) return;
+      if (!mounted || username !== friendUsernameRef.current) return;
       setTyping(true);
     };
-    const onStopTyping = () => setTyping(false);
+
+    const onStopTyping = () => { if (mounted) setTyping(false); };
 
     socket.on("receive_message", onMessage);
     socket.on("user_typing", onTyping);
     socket.on("user_stopped_typing", onStopTyping);
 
     return () => {
+      mounted = false;
       socket.off("receive_message", onMessage);
       socket.off("user_typing", onTyping);
       socket.off("user_stopped_typing", onStopTyping);
-      if (chatId) socket.emit("leave_chat_room", { chatId });
+      
+      if (chatIdRef.current) {
+        socket.emit("leave_chat_room", { chatId: chatIdRef.current });
+      }
+      clearTimeout(typingTimer.current);
+      clearTimeout(typingStartTimer.current);
     };
-  }, [friend._id]);
-
+  }, [friend._id]); // Dependency sirf friend._id par rakhi hai
+  // ── Auto-scroll ─────────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Typing indicator ────────────────────────────────────────────────────────
   const handleTextChange = (e) => {
-    setText(e.target.value);
+    const value = e.target.value;
+    setText(value);
+
     const socket = getSocket();
-    if (chatId) {
-      socket.emit("typing_start", { chatId, username: "me" });
-      clearTimeout(typingTimer.current);
-      typingTimer.current = setTimeout(() => {
-        socket.emit("typing_stop", { chatId });
+    const currentChatId = chatIdRef.current;
+    if (!currentChatId) return;
+
+    clearTimeout(typingTimer.current);
+
+    if (!typingStartTimer.current) {
+      socket.emit("typing_start", { chatId: currentChatId, username: myIdRef.current });
+      typingStartTimer.current = setTimeout(() => {
+        typingStartTimer.current = null;
       }, 1500);
     }
+
+    typingTimer.current = setTimeout(() => {
+      socket.emit("typing_stop", { chatId: currentChatId });
+    }, 2000);
   };
 
+  // ── Send message ────────────────────────────────────────────────────────────
   const send = async () => {
     const trimmed = text.trim();
-    if (!trimmed || !chatId) return;
+    if (!trimmed || !chatIdRef.current) return;
+
     setText("");
     clearTimeout(typingTimer.current);
-    getSocket().emit("typing_stop", { chatId });
+    clearTimeout(typingStartTimer.current);
+    typingStartTimer.current = null;
+    getSocket().emit("typing_stop", { chatId: chatIdRef.current });
+
+    // ── OPTIMISTIC UPDATE ──────────────────────────────────────────────────
+    // Apna message TURANT dikhao, socket ka wait mat karo.
+    // Agar server socket se echo karta hai toh onMessage mein deduplicate ho jaayega.
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg = {
+      _tempId: tempId,
+      text: trimmed,
+      sender: { _id: myIdRef.current },
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
     try {
-      await api.post("/api/ecosystem/chat/send", { chatId, text: trimmed });
-      // Message will arrive via socket receive_message event
+      const res = await api.post("/api/ecosystem/chat/send", {
+        chatId: chatIdRef.current,
+        text: trimmed,
+      });
+      // ── Replace optimistic msg with real DB msg (has _id, proper sender) ──
+      const realMsg = res.data?.message;
+      if (realMsg?._id) {
+        setMessages((prev) =>
+          prev.map((m) => (m._tempId === tempId ? { ...realMsg } : m))
+        );
+      }
     } catch (e) {
       console.error("Send failed:", e);
+      // Remove failed optimistic message
+      setMessages((prev) => prev.filter((m) => m._tempId !== tempId));
     }
   };
 
@@ -160,6 +249,7 @@ function ChatPanel({ friend, myId, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm">
       <div className="bg-[#0f0f0f] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md h-[85vh] sm:h-[600px] flex flex-col overflow-hidden">
+
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414]">
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-white">{Icon.back}</button>
@@ -167,36 +257,49 @@ function ChatPanel({ friend, myId, onClose }) {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate">{friend.fullName}</p>
             <p className="text-xs text-gray-500">
-              {typing ? <span className="text-purple-400 animate-pulse">typing...</span> : `@${friend.username}`}
+              {typing
+                ? <span className="text-purple-400 animate-pulse">typing...</span>
+                : `@${friend.username}`}
             </p>
           </div>
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1">
-          {loading && <p className="text-center text-gray-600 text-sm mt-8">Loading...</p>}
+          {loading && (
+            <p className="text-center text-gray-600 text-sm mt-8">Loading...</p>
+          )}
           {!loading && messages.length === 0 && (
             <p className="text-center text-gray-600 text-sm mt-8">Say hello! 👋</p>
           )}
+
           {messages.map((m, i) => {
-            const senderId  = m.sender?._id || m.sender;
-            const isMine    = String(senderId) === String(myId);
+            const senderId = m.sender?._id || m.sender;
+            const isMine = String(senderId) === String(myId);
             const senderName = m.sender?.username || m.sender?.fullName || (isMine ? "You" : friend.username);
+            // Unique key: real _id prefer karo, fallback to temp or index
+            const msgKey = m._id ? `msg-${m._id}` : m._tempId || `msg-idx-${i}`;
+
             return (
-              <div key={m._id || i} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-                {/* ── Username above bubble ── */}
+              <div key={msgKey} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                {/* Username above bubble */}
                 <span className="text-[10px] text-gray-600 px-1 mb-0.5">
                   {isMine ? "You" : senderName}
                 </span>
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                  isMine
+
+                {/* Message bubble */}
+                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${isMine
                     ? "bg-purple-600 text-white rounded-tr-sm"
                     : "bg-white/10 text-white rounded-tl-sm"
-                }`}>
+                  } ${m._tempId ? "opacity-70" : "opacity-100"}`}>
                   {m.text}
                 </div>
+
+                {/* Timestamp */}
                 <span className="text-[9px] text-gray-700 px-1 mt-0.5">
-                  {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {m.createdAt
+                    ? new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : "sending..."}
                 </span>
               </div>
             );
@@ -221,6 +324,7 @@ function ChatPanel({ friend, myId, onClose }) {
             {Icon.send2}
           </button>
         </div>
+
       </div>
     </div>
   );
@@ -228,7 +332,7 @@ function ChatPanel({ friend, myId, onClose }) {
 
 // ─── FEED TAB ─────────────────────────────────────────────────────────────────
 function FeedTab({ navigate }) {
-  const [items, setItems]   = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -241,7 +345,11 @@ function FeedTab({ navigate }) {
     })();
   }, []);
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return (
+    <div className="flex justify-center py-16">
+      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
   if (items.length === 0) return (
     <div className="text-center py-16">
       <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">{Icon.shop}</div>
@@ -289,10 +397,8 @@ function FeedTab({ navigate }) {
 }
 
 // ─── SUGGESTIONS TAB ──────────────────────────────────────────────────────────
-// Backend: GET /api/ecosystem/members/members/same-branch
-// Shows users from same + related branches sorted by community → university → branch
 function SuggestionsTab({ navigate, myStream, sentIds, friendIds, onConnect }) {
-  const [users, setUsers]   = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -303,16 +409,22 @@ function SuggestionsTab({ navigate, myStream, sentIds, friendIds, onConnect }) {
       } catch { setUsers([]); }
       finally { setLoading(false); }
     })();
-  }, []);
+  }, []); // ← empty array: sirf mount pe ek baar
 
-  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>;
-  if (users.length === 0) return <p className="text-center text-gray-500 py-16 text-sm">No suggestions yet.</p>;
+  if (loading) return (
+    <div className="flex justify-center py-16">
+      <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (users.length === 0) return (
+    <p className="text-center text-gray-500 py-16 text-sm">No suggestions yet.</p>
+  );
 
   return (
     <div className="space-y-2">
       {users.map((u) => {
-        const isFriend = friendIds.has(u._id);
-        const isSent   = sentIds.has(u._id);
+        const isFriend = friendIds.has(String(u._id));
+        const isSent = sentIds.has(String(u._id));
         return (
           <div key={u._id} className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 transition">
             <button onClick={() => navigate(`/profile/${u._id}`)}>
@@ -331,9 +443,8 @@ function SuggestionsTab({ navigate, myStream, sentIds, friendIds, onConnect }) {
               <button
                 onClick={() => onConnect(u._id)}
                 disabled={isSent}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
-                  isSent ? "bg-gray-700/50 text-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-500 text-white"
-                }`}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent ? "bg-gray-700/50 text-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-500 text-white"
+                  }`}
               >
                 {isSent ? "Sent" : "+ Connect"}
               </button>
@@ -347,8 +458,8 @@ function SuggestionsTab({ navigate, myStream, sentIds, friendIds, onConnect }) {
 
 // ─── MEMBER CARD ──────────────────────────────────────────────────────────────
 function MemberCard({ member, sentIds, onConnect, onChat, onProfile, friendIds }) {
-  const isFriend = friendIds.has(member._id);
-  const isSent   = sentIds.has(member._id);
+  const isFriend = friendIds.has(String(member._id));
+  const isSent = sentIds.has(String(member._id));
 
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 transition">
@@ -373,9 +484,8 @@ function MemberCard({ member, sentIds, onConnect, onChat, onProfile, friendIds }
           <button
             onClick={() => onConnect(member._id)}
             disabled={isSent}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
-              isSent ? "bg-gray-700/50 text-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-500 text-white"
-            }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent ? "bg-gray-700/50 text-gray-500 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-500 text-white"
+              }`}
           >
             {isSent ? "Sent" : "Connect"}
           </button>
@@ -388,18 +498,19 @@ function MemberCard({ member, sentIds, onConnect, onChat, onProfile, friendIds }
 // ─── REQUEST CARD ─────────────────────────────────────────────────────────────
 function RequestCard({ request, type, onAccept, onDecline, navigate }) {
   const person = type === "incoming" ? request.from : request.to;
+  if (!person) return null;
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-4 py-3">
-      <button onClick={() => navigate(`/profile/${person?._id}`)}>
+      <button onClick={() => person._id && navigate(`/profile/${person._id}`)}>
         <img
-          src={person?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(person?.fullName || "U")}&background=7c3aed&color=fff`}
-          alt={person?.fullName}
+          src={person.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(person.fullName || "U")}&background=7c3aed&color=fff`}
+          alt={person.fullName}
           className="w-10 h-10 rounded-full object-cover"
         />
       </button>
-      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${person?._id}`)}>
-        <p className="font-semibold text-sm truncate">{person?.fullName}</p>
-        <p className="text-xs text-gray-500">@{person?.username}</p>
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => person._id && navigate(`/profile/${person._id}`)}>
+        <p className="font-semibold text-sm truncate">{person.fullName}</p>
+        <p className="text-xs text-gray-500">@{person.username}</p>
       </div>
       {type === "incoming" && (
         <div className="flex gap-2">
@@ -423,7 +534,6 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
         <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative" onClick={(e) => e.stopPropagation()}>
           <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white">{Icon.x}</button>
           <div className="flex flex-col items-center text-center">
-            {/* Clickable avatar */}
             <button onClick={() => setEnlargeAvatar(true)} className="cursor-zoom-in hover:scale-105 transition">
               <img
                 src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName || "U")}&background=7c3aed&color=fff&bold=true`}
@@ -463,35 +573,45 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function CommunityView() {
-  const { user }    = useContext(AuthContext);
-  const navigate    = useNavigate();
-  const myId        = user?._id;
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const myId = user?._id;
 
-  const [college, setCollege]         = useState(null);
-  const [members, setMembers]         = useState([]);
-  const [friends, setFriends]         = useState([]);
-  const [incoming, setIncoming]       = useState([]);
-  const [outgoing, setOutgoing]       = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [activeTab, setActiveTab]     = useState("members");
-  const [sentIds, setSentIds]         = useState(new Set());
-  const [chatTarget, setChatTarget]   = useState(null);
+  const [college, setCollege] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [incoming, setIncoming] = useState([]);
+  const [outgoing, setOutgoing] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("members");
+  const [sentIds, setSentIds] = useState(new Set());
+  const [chatTarget, setChatTarget] = useState(null);
   const [profileUser, setProfileUser] = useState(null);
   const [enlargeProfile, setEnlargeProfile] = useState(false);
-  const [showInfo, setShowInfo]       = useState(false);
-  const [toast, setToast]             = useState(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  const friendIds = new Set(friends.map((f) => String(f._id)));
+  // Stable Set — avoids re-renders on every friends array reference change
+  const friendIds = useMemo(
+    () => new Set(friends.map((f) => String(f._id))),
+    [friends]
+  );
 
-  const showToast = (msg, type = "success") => {
+  const showToast = useCallback((msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
-  };
+  }, []);
 
-  // ── Fetch all ─────────────────────────────────────────────────────────────
+  // ── Fetch all data once on mount ───────────────────────────────────────────
   const fetchAll = useCallback(async () => {
+
+    if (isLoadedRef.current) return;
+    isLoadedRef.current = true;
+
     setLoading(true);
     try {
+
+      isLoadedRef.current = false;
       const [colRes, memRes, friRes, incRes, outRes] = await Promise.allSettled([
         api.get("/api/createcollege/my-college"),
         api.get("/api/ecosystem/members"),
@@ -509,23 +629,31 @@ export default function CommunityView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // ← no deps: fetchAll kabhi change nahi hoti
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // ── Socket: real-time friend request notifications ─────────────────────
   useEffect(() => {
-    if (!user) return;
+    if (user?._id) { // sirf tabhi connect karein jab user ID available ho
+      fetchAll();
+    }
+  }, [fetchAll, user?._id]);
+
+  // ── Socket: real-time friend request notifications ────────────────────
+  useEffect(() => {
+    if (!user?._id) return;
     const socket = getSocket();
+
     const onNewRequest = (req) => {
       setIncoming((prev) => [req, ...prev]);
       showToast("New friend request!");
     };
-    socket.on("new_friend_request", onNewRequest);
-    return () => socket.off("new_friend_request", onNewRequest);
-  }, [user]);
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+    socket.on("new_friend_request", onNewRequest);
+    return () => {
+      socket.off("new_friend_request", onNewRequest);
+    };
+  }, [user?._id, showToast]);
+
+  // ── Actions ────────────────────────────────────────────────────────────────
   const sendRequest = async (userId) => {
     try {
       await api.post("/api/ecosystem/friends/request", { to: userId });
@@ -556,14 +684,14 @@ export default function CommunityView() {
     }
   };
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
+  // ── Tabs ───────────────────────────────────────────────────────────────────
   const tabs = [
-    { key: "members",     label: "Members",     icon: Icon.users,   count: members.length  },
-    { key: "suggestions", label: "Suggestions", icon: Icon.suggest, count: null            },
-    { key: "friends",     label: "Friends",     icon: Icon.friends, count: friends.length  },
-    { key: "incoming",    label: "Requests",    icon: Icon.inbox,   count: incoming.length },
-    { key: "outgoing",    label: "Sent",        icon: Icon.send2,   count: outgoing.length },
-    { key: "feed",        label: "Feed",        icon: Icon.feed,    count: null            },
+    { key: "members", label: "Members", icon: Icon.users, count: members.length },
+    { key: "suggestions", label: "Suggestions", icon: Icon.suggest, count: null },
+    { key: "friends", label: "Friends", icon: Icon.friends, count: friends.length },
+    { key: "incoming", label: "Requests", icon: Icon.inbox, count: incoming.length },
+    { key: "outgoing", label: "Sent", icon: Icon.send2, count: outgoing.length },
+    { key: "feed", label: "Feed", icon: Icon.feed, count: null },
   ];
 
   if (loading) return (
@@ -590,12 +718,13 @@ export default function CommunityView() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg transition ${toast.type === "error" ? "bg-red-600" : "bg-green-600"} text-white`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg transition ${toast.type === "error" ? "bg-red-600" : "bg-green-600"
+          } text-white`}>
           {toast.msg}
         </div>
       )}
 
-      {/* ── Community Banner ─────────────────────────────────────────────── */}
+      {/* ── Community Banner ──────────────────────────────────────────────── */}
       <div className="bg-gradient-to-b from-purple-900/30 to-transparent pt-24 pb-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-start gap-5">
@@ -607,7 +736,10 @@ export default function CommunityView() {
               <p className="text-gray-400 text-sm mt-0.5">{college.university}</p>
               <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                 <span className="flex items-center gap-1">{Icon.users} {college.usageCount || members.length} members</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] border font-semibold ${college.status === "active" ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] border font-semibold ${college.status === "active"
+                    ? "bg-green-500/10 text-green-400 border-green-500/20"
+                    : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                  }`}>
                   {college.status || "active"}
                 </span>
               </div>
@@ -619,7 +751,7 @@ export default function CommunityView() {
         </div>
       </div>
 
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      {/* ── Tabs ──────────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-black/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto scrollbar-none py-1">
@@ -627,9 +759,8 @@ export default function CommunityView() {
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition flex-shrink-0 ${
-                  activeTab === t.key ? "bg-purple-600 text-white" : "text-gray-500 hover:text-white hover:bg-white/5"
-                }`}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition flex-shrink-0 ${activeTab === t.key ? "bg-purple-600 text-white" : "text-gray-500 hover:text-white hover:bg-white/5"
+                  }`}
               >
                 {t.icon}
                 {t.label}
@@ -644,7 +775,7 @@ export default function CommunityView() {
         </div>
       </div>
 
-      {/* ── Content ──────────────────────────────────────────────────────── */}
+      {/* ── Content ───────────────────────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 py-6">
 
         {activeTab === "members" && (
@@ -715,7 +846,7 @@ export default function CommunityView() {
         {activeTab === "feed" && <FeedTab navigate={navigate} />}
       </div>
 
-      {/* ── Community Info Modal ──────────────────────────────────────────── */}
+      {/* ── Community Info Modal ───────────────────────────────────────────── */}
       {showInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
           <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -737,7 +868,7 @@ export default function CommunityView() {
         </div>
       )}
 
-      {/* ── Profile Modal ─────────────────────────────────────────────────── */}
+      {/* ── Profile Modal ──────────────────────────────────────────────────── */}
       {profileUser && (
         <ProfileModal
           user={profileUser}
@@ -752,7 +883,7 @@ export default function CommunityView() {
         />
       )}
 
-      {/* ── Chat Panel ────────────────────────────────────────────────────── */}
+      {/* ── Chat Panel ─────────────────────────────────────────────────────── */}
       {chatTarget && (
         <ChatPanel
           friend={chatTarget}
@@ -760,6 +891,7 @@ export default function CommunityView() {
           onClose={() => setChatTarget(null)}
         />
       )}
+
     </div>
   );
 }

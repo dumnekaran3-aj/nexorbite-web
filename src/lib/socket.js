@@ -3,7 +3,10 @@
 
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || import.meta.env.RENDER_EXTERNAL_URL || "http://localhost:5173" || "https://backend-2xiu.onrender.com";
+// FIX: localhost:5173 FRONTEND ka port hai — backend ka nahi!
+// Sirf VITE_API_URL use karo, warna production backend URL fallback karo
+const SOCKET_URL =
+  import.meta.env.VITE_API_URL || "https://backend-2xiu.onrender.com";
 
 // Singleton — connect sirf ek baar hoga
 let socket = null;
@@ -11,7 +14,7 @@ let socket = null;
 export const getSocket = () => {
   if (!socket) {
     socket = io(SOCKET_URL, {
-      autoConnect: false,       // hum manually connect karenge login ke baad
+      autoConnect: false,        // hum manually connect karenge login ke baad
       transports: ["websocket"],
     });
   }

@@ -22,25 +22,34 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, productsRes, communitiesRes] = await Promise.all([
-          api.get("/api/home/stats"),
-          api.get("/api/home/trending-products"),
-          api.get("/api/home/trending-communities"),
-        ]);
+useEffect(() => {
+  let isMounted = true; // Component unmount hone par data set na ho
+
+  const fetchData = async () => {
+    try {
+      // Abhi aap 3 requests ek saath bhej rahe hain
+      const [statsRes, productsRes, communitiesRes] = await Promise.all([
+        api.get("/api/home/stats"),
+        api.get("/api/home/trending-products"),
+        api.get("/api/home/trending-communities"),
+      ]);
+      
+      if (isMounted) {
         setStats(statsRes.data.data);
         setProducts(productsRes.data.data);
         setCommunities(communitiesRes.data.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchData();
-  }, []);
+    } catch (err) {
+      console.error("Error fetching home data:", err);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  };
+
+  fetchData();
+
+  return () => { isMounted = false; }; // Cleanup
+}, []);
 
   const joinCommunity = async () => {
     try {
