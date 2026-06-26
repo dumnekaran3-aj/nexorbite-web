@@ -1,37 +1,55 @@
 // src/lib/socket.js
-// Frontend Socket.io client — ek hi instance poori app mein use hoga
-
 import { io } from "socket.io-client";
 
-// FIX: localhost:5173 FRONTEND ka port hai — backend ka nahi!
-// Sirf VITE_API_URL use karo, warna production backend URL fallback karo
 const SOCKET_URL =
   import.meta.env.VITE_API_URL || "https://backend-2xiu.onrender.com";
 
-// Singleton — connect sirf ek baar hoga
 let socket = null;
 
 export const getSocket = () => {
   if (!socket) {
     socket = io(SOCKET_URL, {
-      autoConnect: false,        // hum manually connect karenge login ke baad
-      transports: ["websocket"],
+      autoConnect: false,
+      // FIX: websocket-only Render pe fail hota hai — polling fallback zaroori hai
+      transports: ["websocket", "polling"],
+    });
+
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+    });
+    socket.on("connect_error", (err) => {
+      console.warn("❌ Socket connect_error:", err.message);
+    });
+    socket.on("disconnect", (reason) => {
+      console.log("🔌 Socket disconnected:", reason);
     });
   }
   return socket;
 };
 
-// Login ke baad call karo: connectSocket(userId, collegeId)
 export const connectSocket = (userId, collegeId) => {
   const s = getSocket();
+
+  // FIX: Agar socket pehle se connected hai toh sirf identify emit karo
+  // dobara connect() call karne se duplicate listeners lagte the
   if (!s.connected) {
     s.connect();
+    // connect hone ke baad identify bhejo
+    s.once("connect", () => {
+      s.emit("identify", { userId, collegeId });
+      console.log("📡 Identified:", userId, collegeId);
+    });
+  } else {
+    // Already connected — seedha identify
+    s.emit("identify", { userId, collegeId });
   }
-  // identify event bhejo taaki server user_{userId} room mein join kare
-  s.emit("identify", { userId, collegeId });
+
   return s;
 };
 
 export const disconnectSocket = () => {
-  if (socket?.connected) socket.disconnect();
+  if (socket) {
+    socket.disconnect();
+    socket = null; // FIX: null karo taaki reconnect pe fresh instance mile
+  }
 };

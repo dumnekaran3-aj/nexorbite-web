@@ -4,36 +4,35 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "https://backend-2xiu.onrender.com",
 });
 
-// Circuit Breaker State
-let isBlocked = false;
+// FIX: Circuit breaker hataya — isBlocked = true hone pe SAARI APIs block ho jaati
+// thi even after 429 resolve ho jata. Yeh main reason tha ki community page pe
+// koi bhi request nahi jaati thi. Simple retry-after logic use karo instead.
+let rateLimitedUntil = 0;
 
-// Request Interceptor
 api.interceptors.request.use((config) => {
-  if (isBlocked) {
-    return Promise.reject(new Error("Server is overloaded, blocking requests."));
+  // Sirf tabhi block karo jab actually rate limited ho
+  if (Date.now() < rateLimitedUntil) {
+    const waitSec = Math.ceil((rateLimitedUntil - Date.now()) / 1000);
+    return Promise.reject(new Error(`Rate limited. Wait ${waitSec}s.`));
   }
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Response Interceptor
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const { config, response } = error;
+    const { response } = error;
 
-    // 1. Agar 429 hai, toh 'isBlocked' ko true karein aur 30 seconds wait karein
     if (response?.status === 429) {
-      if (!isBlocked) {
-        isBlocked = true;
-        console.error("CRITICAL: Rate limit hit. Blocking all requests for 30s...");
-        setTimeout(() => { isBlocked = false; }, 30000); // 30 seconds ka break
-      }
-      return Promise.reject(error); // Retry mat karo, yahan se reject kar do
+      // Retry-After header se actual wait time lo, fallback 15s
+      const retryAfter = parseInt(response.headers?.["retry-after"] || "15", 10);
+      rateLimitedUntil = Date.now() + retryAfter * 1000;
+      console.warn(`Rate limited. Blocking for ${retryAfter}s.`);
+      return Promise.reject(error);
     }
 
-    // 2. 401 (Unauthorized)
     if (response?.status === 401 && window.location.pathname !== "/login") {
       localStorage.removeItem("token");
       window.location.href = "/login";
