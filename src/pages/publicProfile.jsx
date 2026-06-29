@@ -123,13 +123,18 @@ export default function PublicProfile() {
   };
 
   const openChat = async () => {
+
     try {
       const res = await api.get(`/api/ecosystem/chat/direct/${userId}`);
+
       // Navigate to community with chat open — or handle globally
-      navigate(`/community/${me.collegeId}?chat=${userId}`);
+
+       navigate(`/community/${me.collegeId}?chat=${userId}`);
+       
     } catch (err) {
-      showToast("Could not open chat", "error");
-    }
+
+        showToast("Could not open chat", "error");
+     }
   };
 
   if (loading) return (
