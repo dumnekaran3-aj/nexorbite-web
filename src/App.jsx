@@ -16,6 +16,10 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 
+import AdminPanel from "./pages/AdminPanel";
+
+//import AdminPanel from "./pages/AdminPanel"; //<Route path="/admin" element={<AdminPanel />} />
+
 export default function App() {
   return (
     <AuthProvider>
@@ -33,9 +37,13 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          
+
+<Route path="/admin" element={<AdminPanel />} />
         </Routes>
         <Footer />
       </BrowserRouter>
     </AuthProvider>
   );
 }
+
