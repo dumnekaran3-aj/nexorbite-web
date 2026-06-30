@@ -3,6 +3,26 @@ import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 
+// ─── Shared Image Enlarge Modal ────────────────────────────────────────────────
+function ImageEnlargeModal({ src, name, onClose, rounded = true }) {
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4" onClick={onClose}>
+      <img
+        src={src}
+        alt={name}
+        className={`max-w-[90vw] max-h-[85vh] object-contain border-4 border-purple-500 shadow-2xl ${rounded ? "rounded-full w-72 h-72 object-cover" : "rounded-2xl"}`}
+        onClick={(e) => e.stopPropagation()}
+      />
+      <button
+        onClick={onClose}
+        className="absolute top-5 right-5 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl transition"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 // ─── Download Alert Modal ─────────────────────────────────────────────────────
 function DownloadModal({ onClose }) {
   return (
@@ -14,10 +34,7 @@ function DownloadModal({ onClose }) {
           NexOrbite mobile app for <span className="text-green-400 font-semibold">Android</span> &amp; <span className="text-blue-400 font-semibold">iOS</span> is under development.<br />
           Stay tuned — we're launching very soon! 🎉
         </p>
-        <button
-          onClick={onClose}
-          className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl text-sm font-bold transition"
-        >
+        <button onClick={onClose} className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl text-sm font-bold transition">
           Got it!
         </button>
       </div>
@@ -34,8 +51,6 @@ function AboutModal({ onClose }) {
           <h2 className="text-xl font-extrabold">About <span className="text-white">Nex</span><span className="text-purple-400">Orbite</span></h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition">✕</button>
         </div>
-
-        {/* Everything in One Place */}
         <div className="px-6 py-5 border-b border-white/10">
           <h3 className="text-lg font-bold mb-1">Everything in One Place</h3>
           <p className="text-gray-400 text-sm mb-5">Built for students, by students</p>
@@ -58,8 +73,6 @@ function AboutModal({ onClose }) {
             ))}
           </div>
         </div>
-
-        {/* How it Works */}
         <div className="px-6 py-5">
           <h3 className="text-lg font-bold mb-1">How It Works</h3>
           <p className="text-gray-400 text-sm mb-4">3 simple steps to get started</p>
@@ -77,7 +90,6 @@ function AboutModal({ onClose }) {
             ))}
           </div>
         </div>
-
         <div className="px-6 pb-6">
           <button onClick={onClose} className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl text-sm font-bold transition">Close</button>
         </div>
@@ -86,40 +98,45 @@ function AboutModal({ onClose }) {
   );
 }
 
-// ─── Trending Community Circle ────────────────────────────────────────────────
-function CommunityCircle({ c, onClick }) {
+// ─── Trending Community Circle (with logo + click-to-enlarge) ────────────────
+function CommunityCircle({ c, onClick, onEnlarge }) {
   const letter = c.college_name?.[0]?.toUpperCase() || "C";
   return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-2 flex-shrink-0 group"
-    >
+    <div className="flex flex-col items-center gap-2 flex-shrink-0 group">
       <div className="relative">
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-900 border-2 border-purple-500/40 group-hover:border-purple-400 transition overflow-hidden flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+        <button
+          type="button"
+          onClick={() => {
+            // FIX: logo hai toh enlarge karo, warna seedha community open karo
+            if (c.logo_url) onEnlarge(c.logo_url, c.college_name);
+            else onClick();
+          }}
+          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-900 border-2 border-purple-500/40 group-hover:border-purple-400 transition overflow-hidden flex items-center justify-center shadow-lg group-hover:scale-105"
+        >
           {c.logo_url ? (
-            <img src={c.logo_url} alt={c.college_name} className="w-full h-full object-cover" loading="lazy" />
+            <img src={c.logo_url} alt={c.college_name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
           ) : (
             <span className="text-xl font-extrabold text-white">{letter}</span>
           )}
-        </div>
-        {/* Member count badge */}
-        <span className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-black leading-tight">
+        </button>
+        <span className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-black leading-tight pointer-events-none">
           {c.usageCount > 999 ? `${Math.floor(c.usageCount / 1000)}k` : c.usageCount || 0}
         </span>
       </div>
-      <span className="text-[10px] text-gray-400 group-hover:text-white transition text-center max-w-[60px] leading-tight truncate">
+      {/* Name click karke community open ho */}
+      <button type="button" onClick={onClick} className="text-[10px] text-gray-400 group-hover:text-white transition text-center max-w-[60px] leading-tight truncate">
         {c.college_name?.split(" ")[0] || "College"}
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
-function ProductCard({ p }) {
+
+// ─── Product Card (with college logo + click-to-enlarge) ─────────────────────
+function ProductCard({ p, onEnlargeLogo }) {
   const [imgError, setImgError] = useState(false);
- 
+
   return (
     <div className="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all group flex-shrink-0 w-64 sm:w-auto cursor-pointer">
- 
-      {/* Thumbnail */}
       <div className="relative h-40 bg-white/5 overflow-hidden">
         {p.thumbnailUrl && !imgError ? (
           <img
@@ -130,83 +147,51 @@ function ProductCard({ p }) {
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-purple-900/20">
-            📦
-          </div>
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-purple-900/20">📦</div>
         )}
- 
-        {/* Price badge */}
         <div className="absolute top-2 right-2">
-          <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${
-            p.isPaid ? "bg-purple-600 text-white" : "bg-green-600 text-white"
-          }`}>
+          <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${p.isPaid ? "bg-purple-600 text-white" : "bg-green-600 text-white"}`}>
             {p.isPaid ? `₹${p.price || 0}` : "Free"}
           </span>
         </div>
- 
-        {/* Trending badge */}
         {p.isTrending && (
           <div className="absolute top-2 left-2">
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-orange-500/90 text-white">
-              🔥 Trending
-            </span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-orange-500/90 text-white">🔥 Trending</span>
           </div>
         )}
       </div>
- 
-      {/* Info */}
       <div className="p-4">
- 
-        {/* Branch tag */}
-        {p.branch && (
-          <span className="text-purple-400 text-[10px] font-bold uppercase tracking-widest">
-            {p.branch}
-          </span>
-        )}
- 
-        {/* Title */}
-        <h3 className="text-white font-semibold text-sm mt-1 mb-1 line-clamp-2 leading-tight">
-          {p.title || "Untitled Product"}
-        </h3>
- 
-        {/* Description */}
-        {p.description && (
-          <p className="text-gray-500 text-xs line-clamp-2 mb-3">{p.description}</p>
-        )}
- 
-        {/* Stats */}
+        {p.branch && <span className="text-purple-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>}
+        <h3 className="text-white font-semibold text-sm mt-1 mb-1 line-clamp-2 leading-tight">{p.title || "Untitled Product"}</h3>
+        {p.description && <p className="text-gray-500 text-xs line-clamp-2 mb-3">{p.description}</p>}
         <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
           <span>🛒 {p.salesCount || 0} sold</span>
           <span>👁 {p.viewCount || 0} views</span>
         </div>
- 
-        {/* ── College Info ── */}
+
+        {/* FIX: college logo — click pe enlarge ho */}
         {p.college?.name && (
           <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-            {/* College logo ya letter */}
-            <div className="w-5 h-5 rounded-full bg-purple-600/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (p.college.logo) onEnlargeLogo(p.college.logo, p.college.name);
+              }}
+              className="w-5 h-5 rounded-full bg-purple-600/40 flex items-center justify-center overflow-hidden flex-shrink-0 hover:scale-110 transition"
+            >
               {p.college.logo ? (
-                <img
-                  src={p.college.logo}
-                  alt={p.college.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.style.display = "none"; }}
-                />
+                <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = "none"; }} />
               ) : (
-                <span className="text-[8px] font-bold text-purple-300">
-                  {p.college.name[0]?.toUpperCase()}
-                </span>
+                <span className="text-[8px] font-bold text-purple-300">{p.college.name[0]?.toUpperCase()}</span>
               )}
-            </div>
+            </button>
             <div className="min-w-0">
               <p className="text-[10px] text-gray-500 truncate">{p.college.name}</p>
-              {p.college.university && (
-                <p className="text-[9px] text-gray-700 truncate">{p.college.university}</p>
-              )}
+              {p.college.university && <p className="text-[9px] text-gray-700 truncate">{p.college.university}</p>}
             </div>
           </div>
         )}
- 
       </div>
     </div>
   );
@@ -226,6 +211,7 @@ export default function Home() {
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [showDownload, setShowDownload] = useState(false);
   const [showAbout,    setShowAbout]   = useState(false);
+  const [enlargeImg,   setEnlargeImg]  = useState(null); // { src, name }
 
   useEffect(() => {
     if (!user) refreshUser();
@@ -238,16 +224,12 @@ export default function Home() {
         const [statsRes, productsRes, communitiesRes] = await Promise.all([
           api.get("/api/home/stats"),
           api.get(`/api/home/trending-products${user?.branch ? `?userBranch=${user.branch}` : ""}`),
- 
           api.get("/api/home/trending-communities"),
         ]);
         if (!isMounted) return;
-        setStats(statsRes.data.data       || { totalUsers: 0, totalCommunities: 0 });
-        setProducts(productsRes.data.data  || []);
+        setStats(statsRes.data.data || { totalUsers: 0, totalCommunities: 0 });
+        setProducts(productsRes.data.data || []);
         setCommunities(communitiesRes.data.data || []);
-
-        console.log("Trending Products API Response:", productsRes.data);
-
       } catch (err) {
         console.error("Home fetch error:", err);
       } finally {
@@ -256,7 +238,7 @@ export default function Home() {
     };
     fetchData();
     return () => { isMounted = false; };
-  }, []);
+  }, []); // eslint-disable-line
 
   const joinCommunity = async () => {
     try {
@@ -274,32 +256,27 @@ export default function Home() {
     }
   };
 
-  // Top 10 communities for circles
   const topCommunities = communities.slice(0, 10);
+  const openEnlarge = (src, name) => setEnlargeImg({ src, name });
 
   return (
     <div className="bg-black text-white min-h-screen">
 
-      {/* Modals */}
       {showDownload && <DownloadModal onClose={() => setShowDownload(false)} />}
       {showAbout    && <AboutModal   onClose={() => setShowAbout(false)} />}
+      {enlargeImg   && <ImageEnlargeModal src={enlargeImg.src} name={enlargeImg.name} onClose={() => setEnlargeImg(null)} />}
 
       {/* ── NAVBAR ──────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 w-full z-[100] bg-black/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-4">
-          {/* Logo */}
           <div className="text-xl sm:text-2xl font-extrabold tracking-tight flex-shrink-0">
             <span className="text-white">Nex</span><span className="text-purple-400">Orbite</span>
           </div>
-
-          {/* Nav links */}
           <div className="hidden sm:flex items-center gap-6 text-sm text-gray-400">
             <button onClick={() => setShowAbout(true)} className="hover:text-white transition">About NexOrbite</button>
             <a href="#marketplace" className="hover:text-white transition">Marketplace</a>
             <a href="#community"   className="hover:text-white transition">Communities</a>
           </div>
-
-          {/* Right: avatar / sign in */}
           {user ? (
             <Link to="/profile" className="flex-shrink-0">
               <img
@@ -322,21 +299,17 @@ export default function Home() {
           India's First Campus Ecosystem
         </span>
 
-        {/* ── Trending Community Circles ── */}
         {!loading && topCommunities.length > 0 && (
           <div className="flex items-center justify-center gap-3 sm:gap-4 mb-8 overflow-x-auto pb-2 max-w-full px-2">
             {topCommunities.map((c) => (
               <CommunityCircle
                 key={c._id}
                 c={c}
+                onEnlarge={openEnlarge}
                 onClick={() => {
                   const isMember = user?.collegeId && String(user.collegeId) === String(c._id);
-                  if (isMember) {
-                    navigate(`/community/${c._id}`);
-                  } else {
-                    setSelectedCommunity(c);
-                    setShowModal(true);
-                  }
+                  if (isMember) navigate(`/community/${c._id}`);
+                  else { setSelectedCommunity(c); setShowModal(true); }
                 }}
               />
             ))}
@@ -344,9 +317,7 @@ export default function Home() {
         )}
         {loading && (
           <div className="flex gap-3 mb-8">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="w-14 h-14 rounded-full bg-white/5 animate-pulse" />
-            ))}
+            {[...Array(6)].map((_, i) => <div key={i} className="w-14 h-14 rounded-full bg-white/5 animate-pulse" />)}
           </div>
         )}
 
@@ -355,26 +326,18 @@ export default function Home() {
           <span className="text-purple-500">Collaborate.</span>
         </h1>
         <p className="text-gray-400 text-base md:text-xl max-w-2xl mb-8">
-          NexOrbite connects students across colleges — share projects, sell digital
-          products, and grow your campus network.
+          NexOrbite connects students across colleges — share projects, sell digital products, and grow your campus network.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => setShowDownload(true)}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-full text-base transition"
-          >
+          <button onClick={() => setShowDownload(true)} className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-full text-base transition">
             📱 Download App
           </button>
-          <button
-            onClick={() => setShowAbout(true)}
-            className="border border-white/20 hover:border-purple-500 text-white font-semibold px-8 py-4 rounded-full text-base transition"
-          >
+          <button onClick={() => setShowAbout(true)} className="border border-white/20 hover:border-purple-500 text-white font-semibold px-8 py-4 rounded-full text-base transition">
             Learn More
           </button>
         </div>
 
-        {/* Stats */}
         <div className="mt-14 flex flex-col sm:flex-row gap-8 sm:gap-12 text-center">
           <div>
             <p className="text-4xl font-extrabold text-purple-400">{loading ? "..." : `${stats.totalUsers}+`}</p>
@@ -393,7 +356,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TRENDING PRODUCTS (hero ke neeche, full section) ────────────────── */}
+      {/* ── TRENDING PRODUCTS ────────────────────────────────────────────────── */}
       <section id="marketplace" className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-8">
@@ -401,16 +364,12 @@ export default function Home() {
               <h2 className="text-3xl font-extrabold">Trending Products</h2>
               <p className="text-gray-500 text-sm mt-1">Top selling student work right now</p>
             </div>
-            {products.length > 0 && (
-              <span className="text-purple-400 text-xs font-semibold">{products.length} items</span>
-            )}
+            {products.length > 0 && <span className="text-purple-400 text-xs font-semibold">{products.length} items</span>}
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-64 bg-white/[0.03] border border-white/8 rounded-2xl animate-pulse" />
-              ))}
+              {[...Array(4)].map((_, i) => <div key={i} className="h-64 bg-white/[0.03] border border-white/8 rounded-2xl animate-pulse" />)}
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-20">
@@ -419,20 +378,18 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* Mobile: horizontal scroll */}
               <div className="flex gap-4 overflow-x-auto pb-3 sm:hidden scrollbar-none">
-                {products.map((p) => <ProductCard key={p._id} p={p} />)}
+                {products.map((p) => <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} />)}
               </div>
-              {/* Desktop: grid */}
               <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((p) => <ProductCard key={p._id} p={p} />)}
+                {products.map((p) => <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} />)}
               </div>
             </>
           )}
         </div>
       </section>
 
-      {/* ── TRENDING COMMUNITIES (full cards) ───────────────────────────────── */}
+      {/* ── ACTIVE COMMUNITIES (with logo + banner) ───────────────────────────── */}
       <section id="community" className="py-16 px-4 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-8">
@@ -444,9 +401,7 @@ export default function Home() {
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-40 bg-white/[0.03] border border-white/8 rounded-2xl animate-pulse" />
-              ))}
+              {[...Array(3)].map((_, i) => <div key={i} className="h-44 bg-white/[0.03] border border-white/8 rounded-2xl animate-pulse" />)}
             </div>
           ) : communities.length === 0 ? (
             <div className="text-center py-20">
@@ -460,34 +415,47 @@ export default function Home() {
                 return (
                   <div
                     key={c._id}
+                    className="bg-black border border-white/10 hover:border-purple-500/50 rounded-2xl overflow-hidden cursor-pointer transition group"
                     onClick={() => {
-                      if (isMember) {
-                        navigate(`/community/${c._id}`);
-                      } else {
-                        setSelectedCommunity(c);
-                        setShowModal(true);
-                      }
+                      if (isMember) navigate(`/community/${c._id}`);
+                      else { setSelectedCommunity(c); setShowModal(true); }
                     }}
-                    className="bg-black border border-white/10 hover:border-purple-500/50 rounded-2xl p-5 cursor-pointer transition group"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-lg font-extrabold flex-shrink-0 group-hover:scale-110 transition overflow-hidden">
-                        {c.logo_url
-                          ? <img src={c.logo_url} alt={c.college_name} className="w-full h-full object-cover" loading="lazy" />
-                          : c.college_name?.[0]?.toUpperCase() || "C"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm truncate">{c.college_name}</h3>
-                        <p className="text-gray-500 text-xs truncate">{c.university}</p>
-                      </div>
-                      <span className={`text-[10px] px-2 py-1 rounded-full font-semibold flex-shrink-0 ${isMember ? "bg-green-500/20 text-green-400" : "bg-white/5 text-gray-400"}`}>
-                        {isMember ? "Enter →" : "Join"}
-                      </span>
+                    {/* FIX: Banner strip — click pe enlarge */}
+                    <div
+                      className="h-16 bg-gradient-to-r from-purple-900/40 to-purple-700/20 relative overflow-hidden"
+                      onClick={(e) => { if (c.banner_url) { e.stopPropagation(); openEnlarge(c.banner_url, `${c.college_name} banner`); } }}
+                    >
+                      {c.banner_url && (
+                        <img src={c.banner_url} alt="" className="w-full h-full object-cover hover:opacity-80 transition" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
+                      )}
                     </div>
-                    <p className="text-gray-500 text-xs line-clamp-2 mb-3">{c.description}</p>
-                    <div className="flex items-center justify-between text-xs text-gray-600">
-                      <span>👥 {c.usageCount || 0} members</span>
-                      {c.category && <span className="px-2 py-0.5 rounded-full bg-white/5">{c.category}</span>}
+
+                    <div className="p-5 -mt-6 relative">
+                      <div className="flex items-center gap-3 mb-3">
+                        {/* FIX: Logo — click pe enlarge */}
+                        <button
+                          type="button"
+                          onClick={(e) => { if (c.logo_url) { e.stopPropagation(); openEnlarge(c.logo_url, c.college_name); } }}
+                          className="w-12 h-12 rounded-xl bg-purple-600 border-2 border-black flex items-center justify-center text-lg font-extrabold flex-shrink-0 group-hover:scale-110 transition overflow-hidden"
+                        >
+                          {c.logo_url
+                            ? <img src={c.logo_url} alt={c.college_name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
+                            : c.college_name?.[0]?.toUpperCase() || "C"}
+                        </button>
+                        <div className="flex-1 min-w-0 pt-2">
+                          <h3 className="font-bold text-sm truncate">{c.college_name}</h3>
+                          <p className="text-gray-500 text-xs truncate">{c.university}</p>
+                        </div>
+                        <span className={`text-[10px] px-2 py-1 rounded-full font-semibold flex-shrink-0 ${isMember ? "bg-green-500/20 text-green-400" : "bg-white/5 text-gray-400"}`}>
+                          {isMember ? "Enter →" : "Join"}
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-xs line-clamp-2 mb-3">{c.description}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <span>👥 {c.usageCount || 0} members</span>
+                        {c.category && <span className="px-2 py-0.5 rounded-full bg-white/5">{c.category}</span>}
+                      </div>
                     </div>
                   </div>
                 );
@@ -505,10 +473,7 @@ export default function Home() {
         <p className="text-gray-400 text-base mb-8 max-w-lg mx-auto">
           Download NexOrbite and become part of India's fastest growing student ecosystem.
         </p>
-        <button
-          onClick={() => setShowDownload(true)}
-          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-10 py-4 rounded-full text-lg transition"
-        >
+        <button onClick={() => setShowDownload(true)} className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-10 py-4 rounded-full text-lg transition">
           📱 Download NexOrbite
         </button>
       </section>
@@ -518,11 +483,15 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#0f0f0f] border border-white/10 rounded-3xl w-full max-w-sm shadow-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center font-extrabold text-lg overflow-hidden flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => selectedCommunity.logo_url && openEnlarge(selectedCommunity.logo_url, selectedCommunity.college_name)}
+                className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center font-extrabold text-lg overflow-hidden flex-shrink-0"
+              >
                 {selectedCommunity.logo_url
                   ? <img src={selectedCommunity.logo_url} alt="" className="w-full h-full object-cover" />
                   : selectedCommunity.college_name?.[0]?.toUpperCase()}
-              </div>
+              </button>
               <div>
                 <h3 className="font-bold text-sm">{selectedCommunity.college_name}</h3>
                 <p className="text-gray-500 text-xs">{selectedCommunity.university}</p>
@@ -536,17 +505,10 @@ export default function Home() {
               maxLength={12}
             />
             <div className="flex gap-2">
-              <button
-                onClick={() => { setShowModal(false); setInviteCode(""); }}
-                className="flex-1 px-4 py-2.5 text-gray-400 border border-white/10 rounded-xl text-sm font-semibold hover:text-white transition"
-              >
+              <button onClick={() => { setShowModal(false); setInviteCode(""); }} className="flex-1 px-4 py-2.5 text-gray-400 border border-white/10 rounded-xl text-sm font-semibold hover:text-white transition">
                 Cancel
               </button>
-              <button
-                onClick={joinCommunity}
-                disabled={!inviteCode.trim()}
-                className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 rounded-xl text-white text-sm font-bold transition"
-              >
+              <button onClick={joinCommunity} disabled={!inviteCode.trim()} className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 rounded-xl text-white text-sm font-bold transition">
                 Join →
               </button>
             </div>

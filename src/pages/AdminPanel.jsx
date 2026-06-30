@@ -1,7 +1,3 @@
-// src/pages/AdminPanel.jsx
-// Community Admin Panel — for owner & principal only
-// Endpoints: /api/admin/* and /api/createcollege/*
-
 import { useEffect, useState, useContext, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -11,7 +7,7 @@ import api from "../lib/api";
 function Toast({ toast }) {
   if (!toast) return null;
   return (
-    <div className={`fixed top-5 right-5 z-[300] px-5 py-3 rounded-2xl text-sm font-semibold shadow-2xl border ${
+    <div className={`fixed top-5 right-5 z-[300] px-5 py-3 rounded-2xl text-sm font-semibold shadow-2xl border transition-all ${
       toast.type === "error"
         ? "bg-red-950 border-red-500/40 text-red-300"
         : toast.type === "warning"
@@ -27,14 +23,16 @@ function Toast({ toast }) {
 function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = false, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onCancel}>
-      <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
         <p className="text-gray-400 text-sm mb-6 leading-relaxed">{message}</p>
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm font-semibold transition">Cancel</button>
           <button
             onClick={onConfirm}
-            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition ${danger ? "bg-red-600 hover:bg-red-500" : "bg-purple-600 hover:bg-purple-500"}`}
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition ${
+              danger ? "bg-red-600 hover:bg-red-500" : "bg-purple-600 hover:bg-purple-500"
+            }`}
           >
             {confirmLabel}
           </button>
@@ -44,14 +42,116 @@ function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = fals
   );
 }
 
-// ─── Role Change Modal ────────────────────────────────────────────────────────
+// ─── Profile Modal ────────────────────────────────────────────────────────────
+function ProfileModal({ member, onClose, onKick, onRoleChange, onSuspend, myId, isOwner }) {
+  const userId   = member.userId?._id || member.userId;
+  const isSelf   = String(userId) === String(myId);
+  const isOwnerRole = member.role === "owner";
+  const canEdit  = !isSelf && !isOwnerRole;
+  const name     = member.userId?.fullName || member.userId?.username || "Unknown";
+  const avatar   = member.userId?.avatar;
+  const initials = name.slice(0, 2).toUpperCase();
+  const isSuspended = member.status === "suspended";
+
+  const ROLE_COLORS = {
+    owner: "bg-yellow-500/20 text-yellow-300",
+    principal: "bg-blue-500/20 text-blue-300",
+    hod: "bg-teal-500/20 text-teal-300",
+    teacher: "bg-green-500/20 text-green-300",
+    student: "bg-purple-500/20 text-purple-300",
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+      <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold text-white">Member Profile</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">×</button>
+        </div>
+
+        {/* Avatar + Info */}
+        <div className="flex flex-col items-center mb-6">
+          {avatar ? (
+            <img src={avatar} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-purple-500 mb-3" />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-purple-700 flex items-center justify-center text-2xl font-bold text-white mb-3">
+              {initials}
+            </div>
+          )}
+          <p className="text-white font-bold text-lg">{name}</p>
+          <p className="text-gray-500 text-sm">@{member.userId?.username || "—"}</p>
+          <p className="text-gray-500 text-xs mt-1">{member.userId?.email || "—"}</p>
+          <div className="flex gap-2 mt-3 flex-wrap justify-center">
+            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${ROLE_COLORS[member.role] || ROLE_COLORS.student}`}>
+              {member.role}
+            </span>
+            {member.department && (
+              <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-gray-300">
+                {member.department}
+              </span>
+            )}
+            {isSuspended && (
+              <span className="text-xs px-3 py-1 rounded-full bg-red-500/20 text-red-300">Suspended</span>
+            )}
+          </div>
+          <p className="text-gray-600 text-xs mt-2">
+            Joined {new Date(member.joinedAt || member.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+
+        {/* Actions */}
+        {canEdit ? (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => { onClose(); onRoleChange(member); }}
+              className="w-full py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 text-sm font-semibold transition"
+            >
+              Change Role
+            </button>
+            <button
+              onClick={() => { onClose(); onSuspend(member); }}
+              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition ${
+                isSuspended
+                  ? "bg-green-600/20 border border-green-500/30 text-green-300 hover:bg-green-600/30"
+                  : "bg-yellow-600/20 border border-yellow-500/30 text-yellow-300 hover:bg-yellow-600/30"
+              }`}
+            >
+              {isSuspended ? "Unsuspend Member" : "Suspend Member"}
+            </button>
+            <button
+              onClick={() => { onClose(); onKick(member); }}
+              className="w-full py-2.5 rounded-xl bg-red-600/20 border border-red-500/30 text-red-300 hover:bg-red-600/30 text-sm font-semibold transition"
+            >
+              Kick Member
+            </button>
+          </div>
+        ) : (
+          <p className="text-center text-gray-600 text-xs">
+            {isSelf ? "This is you." : "Owner role cannot be modified."}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Role Modal ───────────────────────────────────────────────────────────────
 function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
   const [role, setRole]       = useState(member.role);
   const [loading, setLoading] = useState(false);
 
   const ROLES = isOwner
     ? ["student", "teacher", "hod", "principal"]
-    : ["student", "teacher"]; // principal can only change student/teacher
+    : ["student", "teacher"];
+
+  const ROLE_META = {
+    student:   { emoji: "🎓", desc: "Regular community member" },
+    teacher:   { emoji: "📚", desc: "Can post announcements and resources" },
+    hod:       { emoji: "🏛️", desc: "Head of Department — manages a department" },
+    principal: { emoji: "👑", desc: "Co-admin with elevated permissions" },
+  };
 
   const handleSave = async () => {
     if (role === member.role) { onClose(); return; }
@@ -71,19 +171,12 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
     }
   };
 
-  const ROLE_META = {
-    student:   { emoji: "🎓", desc: "Regular community member" },
-    teacher:   { emoji: "📚", desc: "Can post announcements and resources" },
-    hod:       { emoji: "🏛️", desc: "Head of Department — manages a department" },
-    principal: { emoji: "👑", desc: "Co-admin with elevated permissions" },
-  };
-
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
-      <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">Change Role</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">×</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">×</button>
         </div>
         <p className="text-gray-500 text-sm mb-4">
           Changing role for <span className="text-white font-semibold">{member.userId?.fullName || "this member"}</span>
@@ -96,7 +189,7 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition ${
                 role === r
                   ? "border-purple-500 bg-purple-600/15 text-white"
-                  : "border-white/8 bg-white/[0.02] text-gray-400 hover:border-white/15 hover:text-white"
+                  : "border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20 hover:text-white"
               }`}
             >
               <span className="text-xl">{ROLE_META[r].emoji}</span>
@@ -109,9 +202,12 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
           ))}
         </div>
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-semibold transition hover:text-white">Cancel</button>
-          <button onClick={handleSave} disabled={loading || role === member.role}
-            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-bold transition">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-semibold hover:text-white transition">Cancel</button>
+          <button
+            onClick={handleSave}
+            disabled={loading || role === member.role}
+            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-bold transition"
+          >
             {loading ? "Saving..." : "Save Role"}
           </button>
         </div>
@@ -120,7 +216,7 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
   );
 }
 
-// ─── Role badge ───────────────────────────────────────────────────────────────
+// ─── Role Badge ───────────────────────────────────────────────────────────────
 const ROLE_STYLE = {
   owner:     "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
   principal: "bg-blue-500/15 text-blue-300 border-blue-500/30",
@@ -138,62 +234,201 @@ function RoleBadge({ role }) {
 }
 
 // ─── Member Row ───────────────────────────────────────────────────────────────
-function MemberRow({ member, myRole, myId, onKick, onRoleChange }) {
-  const userId   = member.userId?._id || member.userId;
-  const isSelf   = String(userId) === String(myId);
-  const isOwner  = member.role === "owner";
-  const canEdit  = !isSelf && !isOwner;
+function MemberRow({ member, myId, onViewProfile }) {
+  const name     = member.userId?.fullName || member.userId?.username || "Unknown";
+  const avatar   = member.userId?.avatar;
+  const initials = name.slice(0, 2).toUpperCase();
+  const isSelf   = String(member.userId?._id || member.userId) === String(myId);
+  const isSuspended = member.status === "suspended";
 
   return (
-    <div className="flex items-center gap-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/6 rounded-2xl px-4 py-3 transition">
-      <img
-        src={member.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.userId?.fullName || "U")}&background=7c3aed&color=fff&bold=true`}
-        alt={member.userId?.fullName}
-        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-      />
+    <div
+      onClick={() => onViewProfile(member)}
+      className="flex items-center gap-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/6 rounded-2xl px-4 py-3 transition cursor-pointer group"
+    >
+      {avatar ? (
+        <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-white/10" />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+          {initials}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-semibold text-sm truncate">{member.userId?.fullName || "—"}</p>
+          <p className="font-semibold text-sm truncate text-white">{name}</p>
           {isSelf && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-gray-400">You</span>}
+          {isSuspended && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">Suspended</span>}
         </div>
         <p className="text-xs text-gray-500">@{member.userId?.username || "—"} · {member.department || "General"}</p>
       </div>
-      <RoleBadge role={member.role} />
-      {canEdit && (
-        <div className="flex gap-1.5 flex-shrink-0">
-          <button
-            onClick={() => onRoleChange(member)}
-            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white text-xs font-semibold transition"
-          >
-            Role
-          </button>
-          <button
-            onClick={() => onKick(member)}
-            className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 text-xs font-semibold transition"
-          >
-            Kick
-          </button>
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        <RoleBadge role={member.role} />
+        <span className="text-gray-700 group-hover:text-gray-400 text-xs transition">→</span>
+      </div>
     </div>
   );
 }
+function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
+  const [form, setForm] = useState({
+    college_name: college?.college_name || "",
+    description:  college?.description  || "",
+    university:   college?.university   || "",
+  });
+  const [logoFile,   setLogoFile]   = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [logoPreview,   setLogoPreview]   = useState(college?.logo_url   || null);
+  const [bannerPreview, setBannerPreview] = useState(college?.banner_url || null);
+  const [loading, setLoading] = useState(false);
 
+  const handleImageChange = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    if (type === "logo") {
+      setLogoFile(file);
+      setLogoPreview(preview);
+    } else {
+      setBannerFile(file);
+      setBannerPreview(preview);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("college_name", form.college_name);
+      formData.append("description",  form.description);
+      formData.append("university",   form.university);
+      if (logoFile)   formData.append("logo",   logoFile);
+      if (bannerFile) formData.append("banner", bannerFile);
+
+      await api.put(`/api/createcollege/${college._id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      showToast("Community updated", "success");
+      onSuccess();
+    } catch (e) {
+      showToast(e?.response?.data?.msg || "Update failed", "error");
+    } finally {
+      setLoading(false);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+      <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-white">Edit Community</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-white text-xl">×</button>
+        </div>
+
+        {/* Banner Preview */}
+        <div className="mb-4">
+          <label className="text-xs text-gray-500 mb-2 block">Banner Image</label>
+          <div
+            className="w-full h-24 rounded-xl border border-white/10 bg-white/5 overflow-hidden relative cursor-pointer group"
+            onClick={() => document.getElementById("banner-upload").click()}
+          >
+            {bannerPreview ? (
+              <img src={bannerPreview} alt="banner" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">Click to upload banner</div>
+            )}
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold transition">
+              Change Banner
+            </div>
+          </div>
+          <input id="banner-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleImageChange(e, "banner")} />
+        </div>
+
+        {/* Logo Preview */}
+        <div className="mb-4 flex items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-full border border-white/10 bg-white/5 overflow-hidden relative cursor-pointer group flex-shrink-0"
+            onClick={() => document.getElementById("logo-upload").click()}
+          >
+            {logoPreview ? (
+              <img src={logoPreview} alt="logo" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-600 text-2xl font-bold">
+                {college?.college_name?.[0]?.toUpperCase() || "C"}
+              </div>
+            )}
+            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-semibold transition">
+              Change
+            </div>
+          </div>
+          <div>
+            <p className="text-white text-sm font-semibold">{form.college_name || "Community"}</p>
+            <button
+              onClick={() => document.getElementById("logo-upload").click()}
+              className="text-purple-400 text-xs hover:text-purple-300 transition mt-0.5"
+            >
+              Upload Logo
+            </button>
+          </div>
+          <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleImageChange(e, "logo")} />
+        </div>
+
+        {/* Text Fields */}
+        <div className="space-y-3 mb-5">
+          {[
+            { label: "College Name", key: "college_name" },
+            { label: "University",   key: "university" },
+            { label: "Description",  key: "description" },
+          ].map(({ label, key }) => (
+            <div key={key}>
+              <label className="text-xs text-gray-500 mb-1 block">{label}</label>
+              {key === "description" ? (
+                <textarea
+                  value={form[key]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  rows={3}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition resize-none"
+                />
+              ) : (
+                <input
+                  value={form[key]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-semibold hover:text-white transition">
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={loading} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-bold transition">
+            {loading ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // ─── MAIN ADMIN PANEL ─────────────────────────────────────────────────────────
 export default function AdminPanel() {
   const { user, collegeStatus } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [members,  setMembers]  = useState([]);
-  const [college,  setCollege]  = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  const [toast,    setToast]    = useState(null);
-  const [confirm,  setConfirm]  = useState(null);  // { member } for kick confirm
-  const [roleModal, setRoleModal] = useState(null); // member for role change
-  const [copied,   setCopied]   = useState(false);
-  const searchTimer              = useRef(null);
+  const [members,      setMembers]      = useState([]);
+  const [college,      setCollege]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [search,       setSearch]       = useState("");
+  const [roleFilter,   setRoleFilter]   = useState("");
+  const [toast,        setToast]        = useState(null);
+  const [confirm,      setConfirm]      = useState(null);
+  const [roleModal,    setRoleModal]    = useState(null);
+  const [profileModal, setProfileModal] = useState(null);
+  const [editModal,    setEditModal]    = useState(false);
+  const [copied,       setCopied]       = useState(false);
+  const searchTimer                      = useRef(null);
 
   const isOwner = collegeStatus?.isOwner;
   const myId    = user?._id;
@@ -212,23 +447,21 @@ export default function AdminPanel() {
   }, [collegeStatus, navigate]);
 
   // ── Fetch college info ───────────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await api.get("/api/createcollege/my-college");
-        setCollege(r.data.college);
-      } catch (e) {
-        showToast("Could not load college info", "error");
-      }
-    })();
+  const fetchCollege = useCallback(async () => {
+    try {
+      const r = await api.get("/api/createcollege/my-college");
+      setCollege(r.data.college);
+    } catch (e) {
+      showToast("Could not load college info", "error");
+    }
   }, [showToast]);
 
-  // ── Fetch members ────────────────────────────────────────────────────────────
+  useEffect(() => { fetchCollege(); }, [fetchCollege]);
+
+  // ── Fetch members ─────────────────────────────────────────────────────────
   const fetchMembers = useCallback(async (s = search, r = roleFilter) => {
     setLoading(true);
     try {
-      // Use the working endpoint from college_owner_controller: /api/createcollege/my-college
-      // which returns members via getCollegeMembersService
       const res = await api.get("/api/createcollege/my-college", {
         params: { search: s, role: r },
       });
@@ -255,14 +488,33 @@ export default function AdminPanel() {
     const targetUserId = member.userId?._id || member.userId;
     try {
       await api.post("/api/admin/kick-user", {
-        memberId:     member._id,
         targetUserId,
-        reason:       "Removed by admin",
+        reason: "Removed by admin",
       });
       showToast("Member removed", "success");
-      setMembers((prev) => prev.filter((m) => m._id !== member._id));
+      setMembers((prev) => prev.filter((m) => (m.userId?._id || m.userId) !== targetUserId));
     } catch (e) {
       showToast(e?.response?.data?.msg || "Could not remove member", "error");
+    } finally {
+      setConfirm(null);
+    }
+  };
+
+  // ── Suspend / Unsuspend ──────────────────────────────────────────────────────
+  const handleSuspend = async () => {
+    const member       = confirm.suspendMember;
+    const targetUserId = member.userId?._id || member.userId;
+    const isSuspended  = member.status === "suspended";
+    try {
+      await api.patch("/api/admin/update-role", {
+        targetUserId,
+        newRole: member.role,
+        status: isSuspended ? "active" : "suspended",
+      });
+      showToast(isSuspended ? "Member unsuspended" : "Member suspended", "success");
+      fetchMembers();
+    } catch (e) {
+      showToast(e?.response?.data?.msg || "Could not update status", "error");
     } finally {
       setConfirm(null);
     }
@@ -277,22 +529,18 @@ export default function AdminPanel() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const ROLE_FILTERS = ["", "student", "teacher", "hod", "principal", "owner"];
+  const filteredMembers = members.filter((m) => {
+    const name  = m.userId?.fullName?.toLowerCase() || "";
+    const uname = m.userId?.username?.toLowerCase()  || "";
+    const q     = search.toLowerCase();
+    return (!search || name.includes(q) || uname.includes(q)) &&
+           (!roleFilter || m.role === roleFilter);
+  });
 
-  // Member counts by role
   const counts = members.reduce((acc, m) => {
     acc[m.role] = (acc[m.role] || 0) + 1;
     return acc;
   }, {});
-
-  const filteredMembers = members.filter((m) => {
-    const name = m.userId?.fullName?.toLowerCase() || "";
-    const uname = m.userId?.username?.toLowerCase() || "";
-    const q = search.toLowerCase();
-    const matchSearch = !search || name.includes(q) || uname.includes(q);
-    const matchRole   = !roleFilter || m.role === roleFilter;
-    return matchSearch && matchRole;
-  });
 
   if (!collegeStatus || !["owner", "principal"].includes(collegeStatus.role)) {
     return (
@@ -306,8 +554,8 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
 
-      {/* Confirm dialog */}
-      {confirm && !confirm.type && confirm.member && (
+      {/* Kick confirm */}
+      {confirm?.member && !confirm?.suspendMember && !confirm?.type && (
         <ConfirmDialog
           title="Remove Member"
           message={`Remove ${confirm.member.userId?.fullName || "this member"} from the community? They will lose access immediately.`}
@@ -318,13 +566,73 @@ export default function AdminPanel() {
         />
       )}
 
-      {/* Role change modal */}
+      {/* Suspend confirm */}
+      {confirm?.suspendMember && (
+        <ConfirmDialog
+          title={confirm.suspendMember.status === "suspended" ? "Unsuspend Member?" : "Suspend Member?"}
+          message={
+            confirm.suspendMember.status === "suspended"
+              ? `Restore access for ${confirm.suspendMember.userId?.fullName || "this member"}?`
+              : `Suspend ${confirm.suspendMember.userId?.fullName || "this member"}? They won't be able to access the community.`
+          }
+          confirmLabel={confirm.suspendMember.status === "suspended" ? "Unsuspend" : "Suspend"}
+          danger={confirm.suspendMember.status !== "suspended"}
+          onConfirm={handleSuspend}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {/* Delete community confirm */}
+      {confirm?.type === "delete" && (
+        <ConfirmDialog
+          title="Delete Community?"
+          message={`This will permanently delete "${college?.college_name}" and remove all ${college?.usageCount || 0} members. This cannot be undone.`}
+          confirmLabel="Yes, Delete"
+          danger
+          onConfirm={async () => {
+            try {
+              await api.delete(`/api/createcollege/${college._id}`);
+              showToast("Community deleted", "success");
+              setTimeout(() => navigate("/"), 1500);
+            } catch (e) {
+              showToast(e?.response?.data?.msg || "Delete failed", "error");
+            }
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {/* Role modal */}
       {roleModal && (
         <RoleModal
           member={roleModal}
           isOwner={isOwner}
           onClose={() => setRoleModal(null)}
           onSuccess={() => fetchMembers()}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Profile modal */}
+      {profileModal && (
+        <ProfileModal
+          member={profileModal}
+          myId={myId}
+          isOwner={isOwner}
+          onClose={() => setProfileModal(null)}
+          onKick={(m) => { setProfileModal(null); setConfirm({ member: m }); }}
+          onRoleChange={(m) => { setProfileModal(null); setRoleModal(m); }}
+          onSuspend={(m) => { setProfileModal(null); setConfirm({ suspendMember: m }); }}
+        />
+      )}
+
+      {/* Edit community modal */}
+      {editModal && (
+        <EditCommunityModal
+          college={college}
+          onClose={() => setEditModal(false)}
+          onSuccess={() => { fetchCollege(); fetchMembers(); }}
           showToast={showToast}
         />
       )}
@@ -342,11 +650,21 @@ export default function AdminPanel() {
             <h1 className="text-2xl font-extrabold">Admin Panel</h1>
             {college && <p className="text-gray-500 text-sm mt-0.5">{college.college_name}</p>}
           </div>
-          {isOwner && (
-            <span className="px-3 py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 text-xs font-bold">
-              ⚙️ Owner
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <button
+                onClick={() => setEditModal(true)}
+                className="px-4 py-2 rounded-xl border border-white/10 text-gray-300 hover:text-white hover:border-white/20 text-xs font-semibold transition"
+              >
+                ✏️ Edit Community
+              </button>
+            )}
+            {isOwner && (
+              <span className="px-3 py-1.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 text-xs font-bold">
+                ⚙️ Owner
+              </span>
+            )}
+          </div>
         </div>
 
         {/* ── Stats row ───────────────────────────────────────────────────── */}
@@ -371,19 +689,21 @@ export default function AdminPanel() {
             <div>
               <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-1">Invite Code</p>
               <p className="text-2xl font-mono font-bold tracking-widest text-white">{college.invite_code}</p>
-              <p className="text-gray-500 text-xs mt-0.5">Share this with students to join your community</p>
+              <p className="text-gray-500 text-xs mt-0.5">Share with students to join</p>
             </div>
             <button
               onClick={copyInviteCode}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${copied ? "bg-green-600 text-white" : "bg-purple-600 hover:bg-purple-500 text-white"}`}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+                copied ? "bg-green-600 text-white" : "bg-purple-600 hover:bg-purple-500 text-white"
+              }`}
             >
               {copied ? "✓ Copied!" : "📋 Copy Code"}
             </button>
           </div>
         )}
 
-        {/* ── Community Info (owner only) ──────────────────────────────────── */}
-        {isOwner && college && (
+        {/* ── Community Info ───────────────────────────────────────────────── */}
+        {college && (
           <div className="bg-white/[0.02] border border-white/6 rounded-2xl px-5 py-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Community Info</p>
@@ -395,47 +715,42 @@ export default function AdminPanel() {
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-              <InfoItem label="Status" value={college.status || "active"} />
-              <InfoItem label="Category" value={college.category || "—"} />
-              <InfoItem label="Privacy" value={college.isprivate ? "Private 🔒" : "Public 🌐"} />
+              <InfoItem label="Status"     value={college.status || "active"} />
+              <InfoItem label="Privacy"    value={college.isprivate ? "Private 🔒" : "Public 🌐"} />
               <InfoItem label="University" value={college.university} />
-              <InfoItem label="Created" value={new Date(college.createdAt).toLocaleDateString()} />
+              <InfoItem label="Created"    value={new Date(college.createdAt).toLocaleDateString()} />
+              <InfoItem label="Members"    value={`${college.usageCount} / ${college.usageLimit}`} />
             </div>
           </div>
         )}
 
         {/* ── Members table ────────────────────────────────────────────────── */}
         <div className="bg-white/[0.02] border border-white/6 rounded-3xl overflow-hidden">
-
-          {/* Table header */}
           <div className="px-5 py-4 border-b border-white/6 flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <h2 className="font-bold text-base">Members</h2>
-              <p className="text-gray-600 text-xs mt-0.5">{filteredMembers.length} shown</p>
+              <p className="text-gray-600 text-xs mt-0.5">{filteredMembers.length} shown · click to view profile</p>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {/* Search */}
               <input
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search name..."
                 className="bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500 transition w-40"
               />
-              {/* Role filter */}
               <select
                 value={roleFilter}
                 onChange={(e) => { setRoleFilter(e.target.value); fetchMembers(search, e.target.value); }}
                 className="bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-gray-300 outline-none focus:border-purple-500 transition cursor-pointer"
               >
                 <option value="">All Roles</option>
-                {ROLE_FILTERS.filter(Boolean).map((r) => (
+                {["student", "teacher", "hod", "principal", "owner"].map((r) => (
                   <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Member list */}
           <div className="p-4 space-y-2">
             {loading && (
               <div className="flex justify-center py-12">
@@ -451,10 +766,8 @@ export default function AdminPanel() {
               <MemberRow
                 key={m._id}
                 member={m}
-                myRole={collegeStatus?.role}
                 myId={myId}
-                onKick={(member) => setConfirm({ member })}
-                onRoleChange={(member) => setRoleModal(member)}
+                onViewProfile={(member) => setProfileModal(member)}
               />
             ))}
           </div>
@@ -485,27 +798,6 @@ export default function AdminPanel() {
         )}
 
       </div>
-
-      {/* Delete community confirm */}
-      {confirm?.type === "delete" && (
-        <ConfirmDialog
-          title="Delete Community?"
-          message={`This will permanently delete "${college?.college_name}" and remove all ${college?.usageCount || 0} members. This cannot be undone.`}
-          confirmLabel="Yes, Delete"
-          danger
-          onConfirm={async () => {
-            try {
-              await api.delete(`/api/createcollege/${college._id}`);
-              showToast("Community deleted", "success");
-              setTimeout(() => navigate("/"), 1500);
-            } catch (e) {
-              showToast(e?.response?.data?.msg || "Delete failed", "error");
-            }
-            setConfirm(null);
-          }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
     </div>
   );
 }
