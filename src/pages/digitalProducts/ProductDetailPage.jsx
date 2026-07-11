@@ -7,9 +7,9 @@ import {
   leaveProductEngagement,
   getAssetDownloadUrl,
   claimFreeProduct,
-} from "../../lib/digitalProduct.api";
+} from "../../lib/digitalproduct.api";
 import { useRazorpay } from "../../hooks/useRazorpay";
-import BranchBadge from "../../components/digitalProducts/BranchBadge";
+import BranchBadge from "../../components/digitalproducts/BranchBadge";
 import Toast, { useToast } from "../../components/ui/Toast";
 // src/pages/digitalProduct/ProductDetailPage.jsx
 

@@ -1,8 +1,8 @@
 // src/pages/digitalProduct/MarketplacePage.jsx
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllProducts } from "../../lib/digitalProduct.api";
-import ProductCard from "../../components/digitalProducts/ProductCard";
+import { getAllProducts } from "../../lib/digitalproduct.api";
+import ProductCard from "../../components/digitalproducts/ProductCard";
 import Toast, { useToast } from "../../components/ui/Toast";
 import { BRANCHES, BRANCH_CATEGORIES } from "../../constants/digitalProduct.constants";
 

@@ -1,8 +1,8 @@
 // src/pages/digitalProduct/MyProductsPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyProducts, deleteDigitalProduct } from "../../lib/digitalProduct.api";
-import ProductCard from "../../components/digitalProducts/ProductCard";
+import { getMyProducts, deleteDigitalProduct } from "../../lib/digitalproduct.api";
+import ProductCard from "../../components/digitalproducts/ProductCard";
 import Toast, { useToast } from "../../components/ui/Toast";
 
 export default function MyProductsPage() {

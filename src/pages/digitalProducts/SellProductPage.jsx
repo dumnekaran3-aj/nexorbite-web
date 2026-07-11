@@ -2,7 +2,7 @@
 import { useContext, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
-import { createDigitalProduct } from "../../lib/digitalProduct.api";
+import { createDigitalProduct } from "../../lib/digitalproduct.api";
 import Toast, { useToast } from "../../components/ui/Toast";
 import {
   BRANCHES,
