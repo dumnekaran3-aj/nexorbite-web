@@ -228,7 +228,8 @@ function RoleBadge({ role }) {
 
 // ─── MAIN PROFILE VIEW ────────────────────────────────────────────────────────
 export default function ProfileView() {
-  const { user, collegeStatus, refreshCollegeStatus } = useContext(AuthContext);
+  const { user, collegeStatus, refreshCollegeStatus ,loading: authLoading, } = useContext(AuthContext);
+ 
   const navigate = useNavigate();
 
   const [enlargeAvatar, setEnlargeAvatar] = useState(false);
@@ -259,12 +260,21 @@ export default function ProfileView() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!user) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
 
+  if (authLoading) return (
+  <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+if (!user) return (
+  <div className="min-h-screen bg-black flex items-center justify-center px-4">
+    <div className="text-center">
+      <p className="text-gray-400 mb-4">Please login to view your profile</p>
+      <button onClick={() => navigate("/login")} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button>
+    </div>
+  </div>
+);
   // ── Derive status from collegeStatus ──────────────────────────────────────
   const isJoined = collegeStatus?.isJoined === true;
   const role     = collegeStatus?.role;          // "owner" | "principal" | "student" | etc.

@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
+import Navbar from "../components/layout/Navbar";
 
 // ─── Shared Image Enlarge Modal ────────────────────────────────────────────────
 function ImageEnlargeModal({ src, name, onClose, rounded = true }) {
@@ -276,43 +277,8 @@ export default function Home() {
       {showAbout    && <AboutModal   onClose={() => setShowAbout(false)} />}
       {enlargeImg   && <ImageEnlargeModal src={enlargeImg.src} name={enlargeImg.name} onClose={() => setEnlargeImg(null)} />}
 
-      {/* ── NAVBAR ──────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 w-full z-[100] bg-black/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center gap-4">
-          <div className="text-xl sm:text-2xl font-extrabold tracking-tight flex-shrink-0">
-            <span className="text-white">Nex</span><span className="text-purple-400">Orbite</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-6 text-sm text-gray-400">
-            <button onClick={() => setShowAbout(true)} className="hover:text-white transition">About NexOrbite</button>
-            <a href="#marketplace" className="hover:text-white transition">Marketplace</a>
-            <a href="#community"   className="hover:text-white transition">Communities</a>
-          </div>
-
-          {/* ── Projects button + Profile/Sign-in, side by side ─────────────── */}
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
-            <Link
-              to="/marketplace"
-              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full border border-white/10 hover:border-purple-500/50 bg-white/[0.03] hover:bg-white/[0.06] text-gray-300 hover:text-white text-xs sm:text-sm font-semibold transition"
-            >
-              🛍️ <span className="hidden xs:inline">Projects</span>
-            </Link>
-
-            {user ? (
-              <Link to="/profile" className="flex-shrink-0">
-                <img
-                  src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || "U")}&background=7c3aed&color=fff`}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full border-2 border-purple-500 object-cover hover:scale-105 transition"
-                />
-              </Link>
-            ) : (
-              <Link to="/login" className="bg-purple-600 hover:bg-purple-500 px-5 py-2 rounded-full text-sm font-semibold transition flex-shrink-0">
-                Sign In
-              </Link>
-            )}
-          </div>
-        </div>
-      </nav>
+      {/* ── NAVBAR (shared component — same across all pages, includes NotificationBell) ── */}
+      <Navbar onAboutClick={() => setShowAbout(true)} />
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center justify-center text-center px-4 pt-28 pb-10 min-h-[85vh]">
