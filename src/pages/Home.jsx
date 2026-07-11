@@ -132,11 +132,14 @@ function CommunityCircle({ c, onClick, onEnlarge }) {
 }
 
 // ─── Product Card (with college logo + click-to-enlarge) ─────────────────────
-function ProductCard({ p, onEnlargeLogo }) {
+function ProductCard({ p, onEnlargeLogo, onOpen }) {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all group flex-shrink-0 w-64 sm:w-auto cursor-pointer">
+    <div
+      onClick={onOpen}
+      className="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all group flex-shrink-0 w-64 sm:w-auto cursor-pointer"
+    >
       <div className="relative h-40 bg-white/5 overflow-hidden">
         {p.thumbnailUrl && !imgError ? (
           <img
@@ -199,7 +202,7 @@ function ProductCard({ p, onEnlargeLogo }) {
 
 // ─── MAIN HOME ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const { user, refreshUser } = useContext(AuthContext);
+  const { user, loading: authLoading, refreshUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [stats,       setStats]       = useState({ totalUsers: 0, totalCommunities: 0 });
@@ -217,13 +220,20 @@ export default function Home() {
     if (!user) refreshUser();
   }, []); // eslint-disable-line
 
+  // ── FIX: was reading user?.branch (field doesn't exist — profile returns
+  // `stream`), so the branch filter silently never applied. Also now re-runs
+  // once the async user profile finishes loading, and hard-filters to the
+  // user's branch (top 10-20) instead of mixing all branches together. ──────
   useEffect(() => {
+    if (authLoading) return; // wait for AuthContext to resolve user first
+
     let isMounted = true;
     const fetchData = async () => {
       try {
+        const branchQuery = user?.stream ? `&branch=${encodeURIComponent(user.stream)}` : "";
         const [statsRes, productsRes, communitiesRes] = await Promise.all([
           api.get("/api/home/stats"),
-          api.get(`/api/home/trending-products${user?.branch ? `?userBranch=${user.branch}` : ""}`),
+          api.get(`/api/home/trending-products?limit=12${branchQuery}`),
           api.get("/api/home/trending-communities"),
         ]);
         if (!isMounted) return;
@@ -238,7 +248,7 @@ export default function Home() {
     };
     fetchData();
     return () => { isMounted = false; };
-  }, []); // eslint-disable-line
+  }, [authLoading, user?.stream]);
 
   const joinCommunity = async () => {
     try {
@@ -277,19 +287,30 @@ export default function Home() {
             <a href="#marketplace" className="hover:text-white transition">Marketplace</a>
             <a href="#community"   className="hover:text-white transition">Communities</a>
           </div>
-          {user ? (
-            <Link to="/profile" className="flex-shrink-0">
-              <img
-                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || "U")}&background=7c3aed&color=fff`}
-                alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-purple-500 object-cover hover:scale-105 transition"
-              />
+
+          {/* ── Projects button + Profile/Sign-in, side by side ─────────────── */}
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+            <Link
+              to="/marketplace"
+              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full border border-white/10 hover:border-purple-500/50 bg-white/[0.03] hover:bg-white/[0.06] text-gray-300 hover:text-white text-xs sm:text-sm font-semibold transition"
+            >
+              🛍️ <span className="hidden xs:inline">Projects</span>
             </Link>
-          ) : (
-            <Link to="/login" className="bg-purple-600 hover:bg-purple-500 px-5 py-2 rounded-full text-sm font-semibold transition flex-shrink-0">
-              Sign In
-            </Link>
-          )}
+
+            {user ? (
+              <Link to="/profile" className="flex-shrink-0">
+                <img
+                  src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || "U")}&background=7c3aed&color=fff`}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full border-2 border-purple-500 object-cover hover:scale-105 transition"
+                />
+              </Link>
+            ) : (
+              <Link to="/login" className="bg-purple-600 hover:bg-purple-500 px-5 py-2 rounded-full text-sm font-semibold transition flex-shrink-0">
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -356,15 +377,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TRENDING PRODUCTS ────────────────────────────────────────────────── */}
+      {/* ── TRENDING PRODUCTS (user's own branch only, top 12) ─────────────────── */}
       <section id="marketplace" className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-extrabold">Trending Products</h2>
-              <p className="text-gray-500 text-sm mt-1">Top selling student work right now</p>
+              <h2 className="text-3xl font-extrabold">
+                {user?.stream ? `Trending in ${user.stream}` : "Trending Products"}
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                {user?.stream ? "Top picks from your branch" : "Top selling student work right now"}
+              </p>
             </div>
-            {products.length > 0 && <span className="text-purple-400 text-xs font-semibold">{products.length} items</span>}
+            <Link to="/marketplace" className="text-purple-400 hover:text-purple-300 text-xs font-semibold transition flex-shrink-0">
+              See all branches →
+            </Link>
           </div>
 
           {loading ? (
@@ -379,10 +406,14 @@ export default function Home() {
           ) : (
             <>
               <div className="flex gap-4 overflow-x-auto pb-3 sm:hidden scrollbar-none">
-                {products.map((p) => <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} />)}
+                {products.map((p) => (
+                  <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} onOpen={() => navigate(`/marketplace/${p._id}`)} />
+                ))}
               </div>
               <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((p) => <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} />)}
+                {products.map((p) => (
+                  <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} onOpen={() => navigate(`/marketplace/${p._id}`)} />
+                ))}
               </div>
             </>
           )}

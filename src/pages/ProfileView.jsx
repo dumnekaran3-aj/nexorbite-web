@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
+import MarketplaceQuickLinks from "../components/digitalproducts/MarketplaceQuickLinks";
 
 // ─── Image Modal ──────────────────────────────────────────────────────────────
 function ImageModal({ src, name, onClose }) {
@@ -265,8 +266,6 @@ export default function ProfileView() {
   );
 
   // ── Derive status from collegeStatus ──────────────────────────────────────
-  // DEBUG: console.log("collegeStatus:", collegeStatus) — agar Admin Panel nahi
-  // dikh raha toh check karo role "owner" / "principal" aa raha hai ya nahi
   const isJoined = collegeStatus?.isJoined === true;
   const role     = collegeStatus?.role;          // "owner" | "principal" | "student" | etc.
   const isOwner  = collegeStatus?.isOwner === true;
@@ -321,6 +320,9 @@ export default function ProfileView() {
             </div>
           )}
         </div>
+
+        {/* ── Marketplace quick links (Sell / My Products / My Library) ─── */}
+        <MarketplaceQuickLinks />
 
         {/* ── Community section ─────────────────────────────────────────── */}
         {isJoined ? (

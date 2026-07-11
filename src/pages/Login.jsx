@@ -77,4 +77,4 @@ export default function Login() {
 }
 
 
-//mechanical ,electrical , eee  , civil , commen , cs 
+//mechanical ,electrical ,  civil , commen , cs 

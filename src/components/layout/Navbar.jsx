@@ -1,10 +1,11 @@
 import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext";// AuthContext import kiya
+import { AuthContext } from "../../context/AuthContext";
+import NotificationBell from "../NotificationBell";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const { user } = useContext(AuthContext); // User state access ki
+  const { user } = useContext(AuthContext);
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
@@ -24,19 +25,23 @@ export default function Navbar() {
         </div>
 
         {/* Auth / Download Section */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3">
           {user ? (
-            <Link to="/profile">
-              <img 
-                src={user.avatar || "https://ui-avatars.com/api/?name=" + user.username} 
-                alt="Profile" 
-                className="w-10 h-10 rounded-full border border-purple-500 object-cover"
-              />
-            </Link>
+            <>
+              {/* FIX: Notification Bell — logged in users ko dikhao */}
+              <NotificationBell />
+              <Link to="/profile">
+                <img
+                  src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.username || "U")}&background=7c3aed&color=fff`}
+                  alt="Profile"
+                  className="w-9 h-9 rounded-full border-2 border-purple-500 object-cover hover:scale-105 transition"
+                />
+              </Link>
+            </>
           ) : (
             <Link
               to="/login"
-              className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-5 py-2 rounded-full transition"
+              className="bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold px-5 py-2 rounded-full transition"
             >
               Sign In
             </Link>
