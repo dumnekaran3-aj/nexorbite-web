@@ -4,12 +4,18 @@ import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { connectSocket, disconnectSocket } from "../lib/socket";
 import { setupPushNotifications, unsubscribePush, setupSWMessageHandler } from "../lib/pushManager";
+import { getMyCommunities } from "../lib/community.api";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user,          setUser]          = useState(null);
   const [collegeStatus, setCollegeStatus] = useState(null);
+  // MULTI-COMMUNITY (Day 1): full list — 1 private + N public communities.
+  // Kept SEPARATE from collegeStatus on purpose — collegeStatus stays wired
+  // to the old private-only /handler endpoint so every existing component
+  // that reads `collegeStatus` keeps working unchanged.
+  const [communities,   setCommunities]   = useState({ privateCommunity: null, publicCommunities: [] });
   const [loading,       setLoading]       = useState(true);
   const isFetchingRef = useRef(false);
 
@@ -22,6 +28,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // MULTI-COMMUNITY (Day 1): refresh the full community list.
+  // getMyCommunities() is already defensive (never throws), so no try/catch
+  // needed here — it always resolves to a safe { privateCommunity, publicCommunities } shape.
+  const refreshCommunities = useCallback(async () => {
+    const data = await getMyCommunities();
+    setCommunities(data);
+  }, []);
+
+  // Convenience helper: "am I a member (private OR public) of this collegeId?"
+  // Components should use this instead of comparing `user.collegeId` directly,
+  // since user.collegeId only reflects PRIVATE membership after the Day 1 fix.
+  const isMemberOfCommunity = useCallback(
+    (collegeId) => {
+      if (!collegeId) return false;
+      const target = String(collegeId);
+      if (communities.privateCommunity && String(communities.privateCommunity.collegeId) === target) {
+        return true;
+      }
+      return communities.publicCommunities.some((c) => String(c.collegeId) === target);
+    },
+    [communities]
+  );
+
   const loadUser = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) { setLoading(false); return; }
@@ -33,6 +62,11 @@ export const AuthProvider = ({ children }) => {
         api.get("/api/profile/me"),
         api.get("/api/createcollege/handler"),
       ]);
+
+      // MULTI-COMMUNITY (Day 1): fetch the full community list alongside the
+      // existing profile/collegeStatus calls. Fire-and-forget with its own
+      // safety net so a failure here can never break login.
+      refreshCommunities();
 
       if (profileRes.status === "fulfilled") {
         const profile = profileRes.value.data.profile;
@@ -60,12 +94,13 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("token");
       setUser(null);
       setCollegeStatus(null);
+      setCommunities({ privateCommunity: null, publicCommunities: [] });
       disconnectSocket();
     } finally {
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [refreshCommunities]);
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -86,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     setUser(null);
     setCollegeStatus(null);
+    setCommunities({ privateCommunity: null, publicCommunities: [] });
     disconnectSocket();
     window.location.href = "/";
   };
@@ -97,6 +133,9 @@ export const AuthProvider = ({ children }) => {
       loading,
       collegeStatus,
       setCollegeStatus,
+      communities,
+      refreshCommunities,
+      isMemberOfCommunity,
       refreshUser:          loadUser,
       refreshCollegeStatus,
       logout,

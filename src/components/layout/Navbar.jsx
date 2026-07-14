@@ -36,6 +36,12 @@ export default function Navbar({ onAboutClick }) {
 
           {user ? ( 
             <>
+              <Link
+                to="/communities"
+                className="hover:text-white transition text-sm text-gray-400"
+              >
+                My Communities
+              </Link>
               <NotificationBell />
               <Link to="/profile" className="flex-shrink-0">
                 <img
@@ -86,7 +92,10 @@ export default function Navbar({ onAboutClick }) {
           )}
 
           {user ? (
-            <Link to="/profile" onClick={() => setOpen(false)} className="text-purple-500 font-semibold">My Profile</Link>
+            <>
+              <Link to="/communities" onClick={() => setOpen(false)} className="hover:text-white">My Communities</Link>
+              <Link to="/profile" onClick={() => setOpen(false)} className="text-purple-500 font-semibold">My Profile</Link>
+            </>
           ) : (
             <Link to="/login" onClick={() => setOpen(false)} className="bg-purple-600 text-white text-center py-2 rounded-full">Sign In</Link>
           )}

@@ -203,7 +203,7 @@ function ProductCard({ p, onEnlargeLogo, onOpen }) {
 
 // ─── MAIN HOME ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const { user, loading: authLoading, refreshUser } = useContext(AuthContext);
+  const { user, loading: authLoading, refreshUser, isMemberOfCommunity, refreshCommunities } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [stats,       setStats]       = useState({ totalUsers: 0, totalCommunities: 0 });
@@ -251,14 +251,26 @@ export default function Home() {
     return () => { isMounted = false; };
   }, [authLoading, user?.stream]);
 
+  // MULTI-COMMUNITY FIX (Day 1): joining now needs the invite_code that
+  // belongs to THIS specific community, not a free-typed code — the circles
+  // on Home don't carry invite codes, so this flow stays code-entry based.
+  // After a successful join we refresh BOTH the private collegeStatus (in
+  // case this was a private community) AND the full communities list (in
+  // case it was public) — either way the UI stays in sync, no stale state.
   const joinCommunity = async () => {
     try {
-      await api.post("/api/createcollege/join", { invite_code: inviteCode });
-      await refreshUser();
+      const res = await api.post("/api/createcollege/join", { invite_code: inviteCode });
+      if (!res.data?.success) {
+        alert(res.data?.msg || "Something went wrong");
+        return;
+      }
+      await Promise.all([refreshUser(), refreshCommunities()]);
       setShowModal(false);
       navigate(`/community/${selectedCommunity._id}`);
     } catch (err) {
-      if (err.response?.status === 400) {
+      // Already-a-member is not really an error from the user's point of
+      // view — just take them into the community instead of showing an alert.
+      if (err.response?.status === 400 && /already/i.test(err.response?.data?.msg || "")) {
         setShowModal(false);
         navigate(`/community/${selectedCommunity._id}`);
       } else {
@@ -294,7 +306,12 @@ export default function Home() {
                 c={c}
                 onEnlarge={openEnlarge}
                 onClick={() => {
-                  const isMember = user?.collegeId && String(user.collegeId) === String(c._id);
+                  // MULTI-COMMUNITY FIX (Day 1): public-community membership no
+                  // longer lives on user.collegeId — checking only that field
+                  // would wrongly show "Join" for a public community the user
+                  // already joined. isMemberOfCommunity() checks both private
+                  // AND public membership from the /my-communities list.
+                  const isMember = isMemberOfCommunity(c._id);
                   if (isMember) navigate(`/community/${c._id}`);
                   else { setSelectedCommunity(c); setShowModal(true); }
                 }}

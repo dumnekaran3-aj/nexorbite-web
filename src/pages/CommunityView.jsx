@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import { getSocket } from "../lib/socket";
+import { leaveCommunity } from "../lib/community.api";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const Icon = {
@@ -1000,6 +1001,8 @@ export default function CommunityView() {
   const [showInfo, setShowInfo]             = useState(false);
   const [toast, setToast]                   = useState(null);
   const [hasFetched, setHasFetched]         = useState(false);
+  const [myRole, setMyRole]                 = useState(null);
+  const [leaving, setLeaving]               = useState(false);
 
   const friendIds = useMemo(() => new Set(friends.map((f) => String(f._id))), [friends]);
 
@@ -1019,7 +1022,10 @@ export default function CommunityView() {
         api.get("/api/ecosystem/friends/requests/incoming"),
         api.get("/api/ecosystem/friends/requests/outgoing"),
       ]);
-      if (colRes.status === "fulfilled") setCollege(colRes.value.data?.college || null);
+      if (colRes.status === "fulfilled") {
+        setCollege(colRes.value.data?.college || null);
+        setMyRole(colRes.value.data?.myRole || null);
+      }
       if (memRes.status === "fulfilled") setMembers(memRes.value.data?.members || []);
       if (friRes.status === "fulfilled") setFriends(friRes.value.data?.friends || []);
       if (incRes.status === "fulfilled") setIncoming(incRes.value.data?.requests || []);
@@ -1036,6 +1042,26 @@ export default function CommunityView() {
     socket.on("new_friend_request", onNewReq);
     return () => socket.off("new_friend_request", onNewReq);
   }, [myId, showToast]);
+
+  // MULTI-COMMUNITY (Day 1): self-exit for this community. Owners cannot
+  // leave their own community (backend also enforces this with a 403 —
+  // hiding the button for owners is just a clearer UX signal).
+  const handleLeaveCommunity = async () => {
+    if (!college?._id || leaving) return;
+    if (!window.confirm(`Leave "${college.college_name}"? You can rejoin later with an invite code.`)) return;
+    setLeaving(true);
+    try {
+      const res = await leaveCommunity(college._id);
+      if (res.success) {
+        showToast("Left community");
+        navigate("/");
+      } else {
+        showToast(res.msg || "Could not leave community", "error");
+      }
+    } finally {
+      setLeaving(false);
+    }
+  };
 
   const sendRequest = async (userId) => {
     try { await api.post("/api/ecosystem/friends/request", { to: userId }); setSentIds((prev) => new Set([...prev, String(userId)])); showToast("Request sent!"); }
@@ -1124,7 +1150,21 @@ export default function CommunityView() {
               <div className="flex justify-between"><span className="text-gray-500">Status</span><span className={college.status==="active"?"text-green-400":"text-yellow-400"}>{college.status}</span></div>
               {college.description && <div className="pt-3 border-t border-white/10"><p className="text-gray-500 text-xs mb-1">About</p><p className="text-gray-300 text-sm">{college.description}</p></div>}
             </div>
-            <button type="button" onClick={() => setShowInfo(false)} className="mt-6 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Close</button>
+
+            {/* MULTI-COMMUNITY (Day 1): self-exit — hidden for the owner,
+                since owners must delete/transfer the community instead. */}
+            {myRole !== "owner" && (
+              <button
+                type="button"
+                disabled={leaving}
+                onClick={handleLeaveCommunity}
+                className="mt-4 w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-xl text-sm font-semibold transition disabled:opacity-50"
+              >
+                {leaving ? "Leaving…" : "Leave Community"}
+              </button>
+            )}
+
+            <button type="button" onClick={() => setShowInfo(false)} className="mt-3 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Close</button>
           </div>
         </div>
       )}
