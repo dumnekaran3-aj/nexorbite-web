@@ -7,11 +7,11 @@ import Navbar from "../components/layout/Navbar";
 // ─── Shared Image Enlarge Modal ────────────────────────────────────────────────
 function ImageEnlargeModal({ src, name, onClose, rounded = true }) {
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-navy-900/85 backdrop-blur-sm p-4" onClick={onClose}>
       <img
         src={src}
         alt={name}
-        className={`max-w-[90vw] max-h-[85vh] object-contain border-4 border-purple-500 shadow-2xl ${rounded ? "rounded-full w-72 h-72 object-cover" : "rounded-2xl"}`}
+        className={`max-w-[90vw] max-h-[85vh] object-contain border-4 border-brand-500 shadow-2xl ${rounded ? "rounded-full w-72 h-72 object-cover" : "rounded-2xl"}`}
         onClick={(e) => e.stopPropagation()}
       />
       <button
@@ -27,7 +27,7 @@ function ImageEnlargeModal({ src, name, onClose, rounded = true }) {
 // ─── Download Alert Modal ─────────────────────────────────────────────────────
 function DownloadModal({ onClose }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-[#0f0f0f] border border-white/10 rounded-3xl p-8 w-full max-w-sm text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="text-5xl mb-4">🚀</div>
         <h3 className="text-xl font-extrabold mb-2">Coming Soon!</h3>
@@ -35,7 +35,7 @@ function DownloadModal({ onClose }) {
           NexOrbite mobile app for <span className="text-green-400 font-semibold">Android</span> &amp; <span className="text-blue-400 font-semibold">iOS</span> is under development.<br />
           Stay tuned — we're launching very soon! 🎉
         </p>
-        <button onClick={onClose} className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl text-sm font-bold transition">
+        <button onClick={onClose} className="w-full py-3 bg-brand-600 hover:bg-brand-500 rounded-2xl text-sm font-bold transition">
           Got it!
         </button>
       </div>
@@ -46,10 +46,10 @@ function DownloadModal({ onClose }) {
 // ─── About Modal ──────────────────────────────────────────────────────────────
 function AboutModal({ onClose }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-[#0f0f0f] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-xl font-extrabold">About <span className="text-white">Nex</span><span className="text-purple-400">Orbite</span></h2>
+          <h2 className="text-xl font-extrabold">About <span className="text-white">Nex</span><span className="text-brand-400">Orbite</span></h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition">✕</button>
         </div>
         <div className="px-6 py-5 border-b border-white/10">
@@ -84,7 +84,7 @@ function AboutModal({ onClose }) {
               { step: "03", title: "Build & Earn",      desc: "Share projects, sell products, collaborate." },
             ].map((s) => (
               <div key={s.step} className="flex-1 text-center bg-white/[0.03] border border-white/8 rounded-2xl p-4">
-                <p className="text-3xl font-extrabold text-purple-500/30 mb-1">{s.step}</p>
+                <p className="text-3xl font-extrabold text-brand-500/30 mb-1">{s.step}</p>
                 <p className="font-semibold text-sm">{s.title}</p>
                 <p className="text-gray-500 text-xs mt-1">{s.desc}</p>
               </div>
@@ -92,7 +92,7 @@ function AboutModal({ onClose }) {
           </div>
         </div>
         <div className="px-6 pb-6">
-          <button onClick={onClose} className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl text-sm font-bold transition">Close</button>
+          <button onClick={onClose} className="w-full py-3 bg-brand-600 hover:bg-brand-500 rounded-2xl text-sm font-bold transition">Close</button>
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ function CommunityCircle({ c, onClick, onEnlarge }) {
             if (c.logo_url) onEnlarge(c.logo_url, c.college_name);
             else onClick();
           }}
-          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-900 border-2 border-purple-500/40 group-hover:border-purple-400 transition overflow-hidden flex items-center justify-center shadow-lg group-hover:scale-105"
+          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-brand-600 to-brand-900 border-2 border-brand-500/40 group-hover:border-brand-400 transition overflow-hidden flex items-center justify-center shadow-lg group-hover:scale-105"
         >
           {c.logo_url ? (
             <img src={c.logo_url} alt={c.college_name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
@@ -120,7 +120,7 @@ function CommunityCircle({ c, onClick, onEnlarge }) {
             <span className="text-xl font-extrabold text-white">{letter}</span>
           )}
         </button>
-        <span className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-black leading-tight pointer-events-none">
+        <span className="absolute -bottom-1 -right-1 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-navy-900 leading-tight pointer-events-none">
           {c.usageCount > 999 ? `${Math.floor(c.usageCount / 1000)}k` : c.usageCount || 0}
         </span>
       </div>
@@ -139,7 +139,7 @@ function ProductCard({ p, onEnlargeLogo, onOpen }) {
   return (
     <div
       onClick={onOpen}
-      className="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all group flex-shrink-0 w-64 sm:w-auto cursor-pointer"
+      className="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-brand-500/50 transition-all group flex-shrink-0 w-64 sm:w-auto cursor-pointer"
     >
       <div className="relative h-40 bg-white/5 overflow-hidden">
         {p.thumbnailUrl && !imgError ? (
@@ -151,10 +151,10 @@ function ProductCard({ p, onEnlargeLogo, onOpen }) {
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-purple-900/20">📦</div>
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-brand-900/20">📦</div>
         )}
         <div className="absolute top-2 right-2">
-          <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${p.isPaid ? "bg-purple-600 text-white" : "bg-green-600 text-white"}`}>
+          <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${p.isPaid ? "bg-brand-600 text-white" : "bg-green-600 text-white"}`}>
             {p.isPaid ? `₹${p.price || 0}` : "Free"}
           </span>
         </div>
@@ -165,7 +165,7 @@ function ProductCard({ p, onEnlargeLogo, onOpen }) {
         )}
       </div>
       <div className="p-4">
-        {p.branch && <span className="text-purple-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>}
+        {p.branch && <span className="text-brand-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>}
         <h3 className="text-white font-semibold text-sm mt-1 mb-1 line-clamp-2 leading-tight">{p.title || "Untitled Product"}</h3>
         {p.description && <p className="text-gray-500 text-xs line-clamp-2 mb-3">{p.description}</p>}
         <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
@@ -182,12 +182,12 @@ function ProductCard({ p, onEnlargeLogo, onOpen }) {
                 e.stopPropagation();
                 if (p.college.logo) onEnlargeLogo(p.college.logo, p.college.name);
               }}
-              className="w-5 h-5 rounded-full bg-purple-600/40 flex items-center justify-center overflow-hidden flex-shrink-0 hover:scale-110 transition"
+              className="w-5 h-5 rounded-full bg-brand-600/40 flex items-center justify-center overflow-hidden flex-shrink-0 hover:scale-110 transition"
             >
               {p.college.logo ? (
                 <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = "none"; }} />
               ) : (
-                <span className="text-[8px] font-bold text-purple-300">{p.college.name[0]?.toUpperCase()}</span>
+                <span className="text-[8px] font-bold text-brand-300">{p.college.name[0]?.toUpperCase()}</span>
               )}
             </button>
             <div className="min-w-0">
@@ -203,7 +203,7 @@ function ProductCard({ p, onEnlargeLogo, onOpen }) {
 
 // ─── MAIN HOME ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const { user, loading: authLoading, refreshUser, isMemberOfCommunity, refreshCommunities } = useContext(AuthContext);
+  const { user, loading: authLoading, refreshUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [stats,       setStats]       = useState({ totalUsers: 0, totalCommunities: 0 });
@@ -251,26 +251,14 @@ export default function Home() {
     return () => { isMounted = false; };
   }, [authLoading, user?.stream]);
 
-  // MULTI-COMMUNITY FIX (Day 1): joining now needs the invite_code that
-  // belongs to THIS specific community, not a free-typed code — the circles
-  // on Home don't carry invite codes, so this flow stays code-entry based.
-  // After a successful join we refresh BOTH the private collegeStatus (in
-  // case this was a private community) AND the full communities list (in
-  // case it was public) — either way the UI stays in sync, no stale state.
   const joinCommunity = async () => {
     try {
-      const res = await api.post("/api/createcollege/join", { invite_code: inviteCode });
-      if (!res.data?.success) {
-        alert(res.data?.msg || "Something went wrong");
-        return;
-      }
-      await Promise.all([refreshUser(), refreshCommunities()]);
+      await api.post("/api/createcollege/join", { invite_code: inviteCode });
+      await refreshUser();
       setShowModal(false);
       navigate(`/community/${selectedCommunity._id}`);
     } catch (err) {
-      // Already-a-member is not really an error from the user's point of
-      // view — just take them into the community instead of showing an alert.
-      if (err.response?.status === 400 && /already/i.test(err.response?.data?.msg || "")) {
+      if (err.response?.status === 400) {
         setShowModal(false);
         navigate(`/community/${selectedCommunity._id}`);
       } else {
@@ -283,7 +271,7 @@ export default function Home() {
   const openEnlarge = (src, name) => setEnlargeImg({ src, name });
 
   return (
-    <div className="bg-black text-white min-h-screen">
+    <div className="bg-navy-900 text-white min-h-screen">
 
       {showDownload && <DownloadModal onClose={() => setShowDownload(false)} />}
       {showAbout    && <AboutModal   onClose={() => setShowAbout(false)} />}
@@ -294,8 +282,8 @@ export default function Home() {
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center justify-center text-center px-4 pt-28 pb-10 min-h-[85vh]">
-        <span className="text-purple-400 text-xs font-bold tracking-[0.25em] uppercase mb-5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10">
-          India's First Campus Ecosystem
+        <span className="text-brand-400 text-xs font-bold tracking-[0.25em] uppercase mb-5 px-3 py-1.5 rounded-full border border-brand-500/30 bg-brand-500/10">
+         Make Your Network , Collabrate Each Other
         </span>
 
         {!loading && topCommunities.length > 0 && (
@@ -306,12 +294,7 @@ export default function Home() {
                 c={c}
                 onEnlarge={openEnlarge}
                 onClick={() => {
-                  // MULTI-COMMUNITY FIX (Day 1): public-community membership no
-                  // longer lives on user.collegeId — checking only that field
-                  // would wrongly show "Join" for a public community the user
-                  // already joined. isMemberOfCommunity() checks both private
-                  // AND public membership from the /my-communities list.
-                  const isMember = isMemberOfCommunity(c._id);
+                  const isMember = user?.collegeId && String(user.collegeId) === String(c._id);
                   if (isMember) navigate(`/community/${c._id}`);
                   else { setSelectedCommunity(c); setShowModal(true); }
                 }}
@@ -327,34 +310,34 @@ export default function Home() {
 
         <h1 className="text-4xl md:text-7xl font-extrabold leading-tight mb-5">
           Build. Sell. <br />
-          <span className="text-purple-500">Collaborate.</span>
+          <span className="text-brand-500">Collaborate.</span>
         </h1>
         <p className="text-gray-400 text-base md:text-xl max-w-2xl mb-8">
           NexOrbite connects students across colleges — share projects, sell digital products, and grow your campus network.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <button onClick={() => setShowDownload(true)} className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-full text-base transition">
+          <button onClick={() => setShowDownload(true)} className="bg-brand-600 hover:bg-brand-500 text-white font-semibold px-8 py-4 rounded-full text-base transition">
             📱 Download App
           </button>
-          <button onClick={() => setShowAbout(true)} className="border border-white/20 hover:border-purple-500 text-white font-semibold px-8 py-4 rounded-full text-base transition">
+          <button onClick={() => setShowAbout(true)} className="border border-white/20 hover:border-brand-500 text-white font-semibold px-8 py-4 rounded-full text-base transition">
             Learn More
           </button>
         </div>
 
         <div className="mt-14 flex flex-col sm:flex-row gap-8 sm:gap-12 text-center">
           <div>
-            <p className="text-4xl font-extrabold text-purple-400">{loading ? "..." : `${stats.totalUsers}+`}</p>
+            <p className="text-4xl font-extrabold text-brand-400">{loading ? "..." : `${stats.totalUsers}+`}</p>
             <p className="text-gray-500 mt-1 text-sm">Students</p>
           </div>
           <div className="hidden sm:block w-px bg-white/10" />
           <div>
-            <p className="text-4xl font-extrabold text-purple-400">{loading ? "..." : `${stats.totalCommunities}+`}</p>
+            <p className="text-4xl font-extrabold text-brand-400">{loading ? "..." : `${stats.totalCommunities}+`}</p>
             <p className="text-gray-500 mt-1 text-sm">Communities</p>
           </div>
           <div className="hidden sm:block w-px bg-white/10" />
           <div>
-            <p className="text-4xl font-extrabold text-purple-400">6+</p>
+            <p className="text-4xl font-extrabold text-brand-400">6+</p>
             <p className="text-gray-500 mt-1 text-sm">Branches</p>
           </div>
         </div>
@@ -372,7 +355,7 @@ export default function Home() {
                 {user?.stream ? "Top picks from your branch" : "Top selling student work right now"}
               </p>
             </div>
-            <Link to="/marketplace" className="text-purple-400 hover:text-purple-300 text-xs font-semibold transition flex-shrink-0">
+            <Link to="/marketplace" className="text-brand-400 hover:text-brand-300 text-xs font-semibold transition flex-shrink-0">
               See all branches →
             </Link>
           </div>
@@ -429,7 +412,7 @@ export default function Home() {
                 return (
                   <div
                     key={c._id}
-                    className="bg-black border border-white/10 hover:border-purple-500/50 rounded-2xl overflow-hidden cursor-pointer transition group"
+                    className="bg-navy-900 border border-white/10 hover:border-brand-500/50 rounded-2xl overflow-hidden cursor-pointer transition group"
                     onClick={() => {
                       if (isMember) navigate(`/community/${c._id}`);
                       else { setSelectedCommunity(c); setShowModal(true); }
@@ -437,7 +420,7 @@ export default function Home() {
                   >
                     {/* FIX: Banner strip — click pe enlarge */}
                     <div
-                      className="h-16 bg-gradient-to-r from-purple-900/40 to-purple-700/20 relative overflow-hidden"
+                      className="h-16 bg-gradient-to-r from-brand-900/40 to-brand-700/20 relative overflow-hidden"
                       onClick={(e) => { if (c.banner_url) { e.stopPropagation(); openEnlarge(c.banner_url, `${c.college_name} banner`); } }}
                     >
                       {c.banner_url && (
@@ -451,7 +434,7 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={(e) => { if (c.logo_url) { e.stopPropagation(); openEnlarge(c.logo_url, c.college_name); } }}
-                          className="w-12 h-12 rounded-xl bg-purple-600 border-2 border-black flex items-center justify-center text-lg font-extrabold flex-shrink-0 group-hover:scale-110 transition overflow-hidden"
+                          className="w-12 h-12 rounded-xl bg-brand-600 border-2 border-navy-900 flex items-center justify-center text-lg font-extrabold flex-shrink-0 group-hover:scale-110 transition overflow-hidden"
                         >
                           {c.logo_url
                             ? <img src={c.logo_url} alt={c.college_name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
@@ -482,25 +465,25 @@ export default function Home() {
       {/* ── DOWNLOAD CTA ────────────────────────────────────────────────────── */}
       <section id="download" className="py-24 px-4 text-center">
         <h2 className="text-4xl md:text-5xl font-extrabold mb-4">
-          Ready to <span className="text-purple-500">Join?</span>
+          Ready to <span className="text-brand-500">Join?</span>
         </h2>
         <p className="text-gray-400 text-base mb-8 max-w-lg mx-auto">
           Download NexOrbite and become part of India's fastest growing student ecosystem.
         </p>
-        <button onClick={() => setShowDownload(true)} className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-10 py-4 rounded-full text-lg transition">
+        <button onClick={() => setShowDownload(true)} className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-bold px-10 py-4 rounded-full text-lg transition">
           📱 Download NexOrbite
         </button>
       </section>
 
       {/* ── JOIN MODAL ───────────────────────────────────────────────────────── */}
       {showModal && selectedCommunity && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-navy-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#0f0f0f] border border-white/10 rounded-3xl w-full max-w-sm shadow-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <button
                 type="button"
                 onClick={() => selectedCommunity.logo_url && openEnlarge(selectedCommunity.logo_url, selectedCommunity.college_name)}
-                className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center font-extrabold text-lg overflow-hidden flex-shrink-0"
+                className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center font-extrabold text-lg overflow-hidden flex-shrink-0"
               >
                 {selectedCommunity.logo_url
                   ? <img src={selectedCommunity.logo_url} alt="" className="w-full h-full object-cover" />
@@ -513,7 +496,7 @@ export default function Home() {
             </div>
             <p className="text-gray-400 text-xs mb-4">Enter the invite code shared by your college admin.</p>
             <input
-              className="w-full p-3 mb-4 bg-black border border-white/20 rounded-xl text-white outline-none uppercase tracking-[0.2em] text-center font-mono text-lg focus:border-purple-500 transition"
+              className="w-full p-3 mb-4 bg-navy-900 border border-white/20 rounded-xl text-white outline-none uppercase tracking-[0.2em] text-center font-mono text-lg focus:border-brand-500 transition"
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               placeholder="INVITE CODE"
               maxLength={12}
@@ -522,7 +505,7 @@ export default function Home() {
               <button onClick={() => { setShowModal(false); setInviteCode(""); }} className="flex-1 px-4 py-2.5 text-gray-400 border border-white/10 rounded-xl text-sm font-semibold hover:text-white transition">
                 Cancel
               </button>
-              <button onClick={joinCommunity} disabled={!inviteCode.trim()} className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 rounded-xl text-white text-sm font-bold transition">
+              <button onClick={joinCommunity} disabled={!inviteCode.trim()} className="flex-1 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 rounded-xl text-white text-sm font-bold transition">
                 Join →
               </button>
             </div>

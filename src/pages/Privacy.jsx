@@ -1,6 +1,6 @@
 export default function Privacy() {
   return (
-    <div className="bg-black text-white min-h-screen px-4 py-20">
+    <div className="bg-navy-900 text-white min-h-screen px-4 py-20">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
         <p className="text-gray-500 mb-10">Last updated: June 2025</p>
@@ -40,7 +40,7 @@ export default function Privacy() {
           },
         ].map((s) => (
           <div key={s.title} className="mb-8">
-            <h2 className="text-xl font-semibold mb-2 text-purple-400">{s.title}</h2>
+            <h2 className="text-xl font-semibold mb-2 text-brand-400">{s.title}</h2>
             <p className="text-gray-400 leading-relaxed">{s.content}</p>
           </div>
         ))}

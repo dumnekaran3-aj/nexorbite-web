@@ -76,15 +76,15 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-black text-white pt-20 px-4 text-center">
+      <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 text-center">
         <p className="text-gray-500">Product not found or no longer available.</p>
       </div>
     );
@@ -94,13 +94,13 @@ export default function ProductDetailPage() {
   const isFree = product.price === 0;
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
       <div className="max-w-3xl mx-auto space-y-5">
 
         {/* Cover + basic info */}
         <div className="bg-white/[0.03] border border-white/8 rounded-3xl overflow-hidden">
-          <div className="aspect-video bg-black/40">
+          <div className="aspect-video bg-navy-900/40">
             <img src={product.thumbnailUrl} alt={product.title} className="w-full h-full object-cover" />
           </div>
           <div className="p-6">
@@ -116,12 +116,12 @@ export default function ProductDetailPage() {
                 className="flex items-center gap-2 mt-3 cursor-pointer group w-fit"
               >
                 <img
-                  src={seller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.fullName || "U")}&background=7c3aed&color=fff`}
+                  src={seller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.fullName || "U")}&background=5b54a4&color=fff`}
                   alt={seller.fullName}
                   className="w-8 h-8 rounded-full object-cover"
                 />
                 <div>
-                  <p className="text-sm font-semibold group-hover:text-purple-400 transition">{seller.fullName}</p>
+                  <p className="text-sm font-semibold group-hover:text-brand-400 transition">{seller.fullName}</p>
                   <p className="text-xs text-gray-600">@{seller.username}</p>
                 </div>
               </div>
@@ -147,7 +147,7 @@ export default function ProductDetailPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] text-gray-500 uppercase font-semibold tracking-wide">Price</p>
-              <p className="text-3xl font-bold text-purple-400">{isFree ? "Free" : `₹${product.price}`}</p>
+              <p className="text-3xl font-bold text-brand-400">{isFree ? "Free" : `₹${product.price}`}</p>
             </div>
             <div className="flex gap-4 text-xs text-gray-500">
               <span>🛒 {product.salesCount} sold</span>
@@ -163,7 +163,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleDownloadBundle}
                 disabled={downloadingBundle}
-                className="w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
               >
                 {downloadingBundle ? (
                   <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Zipping bundle...</>
@@ -178,7 +178,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={handleDownloadBundle}
                 disabled={downloadingBundle}
-                className="w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
               >
                 {downloadingBundle ? (
                   <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Zipping bundle...</>
@@ -189,7 +189,7 @@ export default function ProductDetailPage() {
             <button
               onClick={handleBuy}
               disabled={paying || claiming}
-              className="w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-bold text-sm transition flex items-center justify-center gap-2"
             >
               {paying || claiming ? (
                 <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Processing...</>

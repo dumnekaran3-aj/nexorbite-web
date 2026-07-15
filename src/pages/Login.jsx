@@ -34,7 +34,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-navy-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-md">
         <h2 className="text-3xl font-bold text-white mb-6 text-center">Sign In</h2>
         
@@ -45,7 +45,7 @@ export default function Login() {
               type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
+              className="w-full bg-navy-900 border border-white/10 rounded-lg p-3 text-white focus:border-brand-500 outline-none"
               placeholder="name@college.edu"
               required
             />
@@ -56,19 +56,19 @@ export default function Login() {
               type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
+              className="w-full bg-navy-900 border border-white/10 rounded-lg p-3 text-white focus:border-brand-500 outline-none"
               required
             />
           </div>
           <button 
             type="submit" 
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition mt-4"
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg transition mt-4"
           >
             Login
           </button>
 
           <p className="text-gray-400 text-sm text-center mt-4">
-            Don't have an account? <Link to="/signup" className="text-purple-500 hover:underline">Sign up</Link>
+            Don't have an account? <Link to="/signup" className="text-brand-500 hover:underline">Sign up</Link>
           </p>
         </form>
       </div>
@@ -77,4 +77,4 @@ export default function Login() {
 }
 
 
-//mechanical ,electrical ,  civil , commen , cs 
+//mechanical ,electrical ,  civil , commen , cs

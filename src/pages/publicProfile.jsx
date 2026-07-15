@@ -8,9 +8,9 @@ import api from "../lib/api";
 // ── Avatar with click-to-enlarge ─────────────────────────────────────────
 function Avatar({ src, name, size = "w-28 h-28", onClick }) {
   return (
-    <button onClick={onClick} className={`${size} rounded-full overflow-hidden border-4 border-purple-500 flex-shrink-0 ${onClick ? "cursor-zoom-in hover:scale-105 transition" : ""}`}>
+    <button onClick={onClick} className={`${size} rounded-full overflow-hidden border-4 border-brand-500 flex-shrink-0 ${onClick ? "cursor-zoom-in hover:scale-105 transition" : ""}`}>
       <img
-        src={src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=7c3aed&color=fff&bold=true`}
+        src={src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=5b54a4&color=fff&bold=true`}
         alt={name}
         className="w-full h-full object-cover"
       />
@@ -20,11 +20,11 @@ function Avatar({ src, name, size = "w-28 h-28", onClick }) {
 
 function ImageModal({ src, name, onClose }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-navy-900/80 backdrop-blur-sm" onClick={onClose}>
       <img
-        src={src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=7c3aed&color=fff&bold=true&size=256`}
+        src={src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=5b54a4&color=fff&bold=true&size=256`}
         alt={name}
-        className="w-72 h-72 rounded-full object-cover border-4 border-purple-500 shadow-2xl"
+        className="w-72 h-72 rounded-full object-cover border-4 border-brand-500 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
     </div>
@@ -37,7 +37,7 @@ const RoleBadge = ({ role }) => {
     principal: "bg-blue-500/20 text-blue-300 border-blue-500/30",
     hod:       "bg-teal-500/20 text-teal-300 border-teal-500/30",
     teacher:   "bg-green-500/20 text-green-300 border-green-500/30",
-    student:   "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    student:   "bg-brand-500/20 text-brand-300 border-brand-500/30",
   };
   return (
     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${map[role] || map.student}`}>
@@ -138,33 +138,33 @@ export default function PublicProfile() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   if (!profile) return (
-    <div className="min-h-screen bg-black flex items-center justify-center text-white">
+    <div className="min-h-screen bg-navy-900 flex items-center justify-center text-white">
       <div className="text-center">
         <p className="text-2xl font-bold mb-2">User not found</p>
-        <button onClick={() => navigate(-1)} className="text-purple-400 hover:underline mt-4 block">← Go back</button>
+        <button onClick={() => navigate(-1)} className="text-brand-400 hover:underline mt-4 block">← Go back</button>
       </div>
     </div>
   );
 
   if (profile.isPrivate && !isMe) return (
-    <div className="min-h-screen bg-black flex items-center justify-center text-white px-4">
+    <div className="min-h-screen bg-navy-900 flex items-center justify-center text-white px-4">
       <div className="text-center max-w-sm">
         <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4 text-4xl">🔒</div>
         <h2 className="text-2xl font-bold mb-2">Private Account</h2>
         <p className="text-gray-500 text-sm">This user's profile is private.</p>
-        <button onClick={() => navigate(-1)} className="mt-6 text-purple-400 hover:underline">← Go back</button>
+        <button onClick={() => navigate(-1)} className="mt-6 text-brand-400 hover:underline">← Go back</button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-24 px-4 pb-16">
       {/* Toast */}
       {toast && (
         <div className={`fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg ${toast.type === "error" ? "bg-red-600" : "bg-green-600"} text-white`}>
@@ -209,7 +209,7 @@ export default function PublicProfile() {
               {friendshipStatus === "accepted" ? (
                 <button
                   onClick={openChat}
-                  className="flex-1 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2"
+                  className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2"
                 >
                   💬 Message
                 </button>
@@ -221,7 +221,7 @@ export default function PublicProfile() {
                 <button
                   onClick={sendRequest}
                   disabled={actionLoading}
-                  className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white py-2.5 rounded-xl text-sm font-semibold transition"
+                  className="flex-1 bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white py-2.5 rounded-xl text-sm font-semibold transition"
                 >
                   {actionLoading ? "Sending..." : "Connect +"}
                 </button>
@@ -239,7 +239,7 @@ export default function PublicProfile() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => navigate("/profile-setup")}
-                className="flex-1 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-semibold transition"
+                className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-xl text-sm font-semibold transition"
               >
                 Edit Profile
               </button>
@@ -259,7 +259,7 @@ export default function PublicProfile() {
                   className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 rounded-2xl p-3 text-left transition"
                 >
                   <img
-                    src={f.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.fullName || "U")}&background=7c3aed&color=fff&bold=true`}
+                    src={f.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.fullName || "U")}&background=5b54a4&color=fff&bold=true`}
                     alt={f.fullName}
                     className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                   />

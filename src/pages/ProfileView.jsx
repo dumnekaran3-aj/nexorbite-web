@@ -7,11 +7,11 @@ import MarketplaceQuickLinks from "../components/digitalproducts/MarketplaceQuic
 // ─── Image Modal ──────────────────────────────────────────────────────────────
 function ImageModal({ src, name, onClose }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-navy-900/80 backdrop-blur-sm" onClick={onClose}>
       <img
-        src={src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=7c3aed&color=fff&bold=true&size=256`}
+        src={src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "U")}&background=5b54a4&color=fff&bold=true&size=256`}
         alt={name}
-        className="w-72 h-72 rounded-full object-cover border-4 border-purple-500 shadow-2xl"
+        className="w-72 h-72 rounded-full object-cover border-4 border-brand-500 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
     </div>
@@ -91,7 +91,7 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
   const CATS = ["General","Tech","Arts","Sports","Science","Business","Medical","Law","Other"];
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md" onClick={onClose}>
       <div className="bg-[#0d0d0d] border border-white/10 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
           <div>
@@ -100,7 +100,7 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition text-lg">×</button>
         </div>
-        <div className="h-0.5 bg-white/5"><div className="h-full bg-purple-600 transition-all" style={{ width: step === 1 ? "50%" : "100%" }} /></div>
+        <div className="h-0.5 bg-white/5"><div className="h-full bg-brand-600 transition-all" style={{ width: step === 1 ? "50%" : "100%" }} /></div>
         <div className="px-6 py-5 space-y-4">
           {step === 1 && (<>
             <Field label="Community Name *" error={errors.college_name}>
@@ -118,7 +118,7 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
               </select>
             </Field>
             <label className="flex items-center gap-3 cursor-pointer">
-              <div onClick={() => set("isprivate", !form.isprivate)} className={`w-11 h-6 rounded-full relative flex-shrink-0 transition-colors ${form.isprivate ? "bg-purple-600" : "bg-white/10"}`}>
+              <div onClick={() => set("isprivate", !form.isprivate)} className={`w-11 h-6 rounded-full relative flex-shrink-0 transition-colors ${form.isprivate ? "bg-brand-600" : "bg-white/10"}`}>
                 <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.isprivate ? "translate-x-5" : "translate-x-0.5"}`} />
               </div>
               <span className="text-sm text-gray-300">Private community <span className="text-gray-600">(invite-only)</span></span>
@@ -133,11 +133,11 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
               <input value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="engineering, python, hackathon" className={iCls()} />
             </Field>
             <Field label="Community Logo" hint="Optional PNG/JPG">
-              <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files[0])} className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600/20 file:text-purple-300 hover:file:bg-purple-600/40 cursor-pointer" />
+              <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files[0])} className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer" />
               {logo && <p className="text-xs text-green-400 mt-1">✓ {logo.name}</p>}
             </Field>
             <Field label="Banner Image" hint="Optional wide image">
-              <input type="file" accept="image/*" onChange={(e) => setBanner(e.target.files[0])} className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600/20 file:text-purple-300 hover:file:bg-purple-600/40 cursor-pointer" />
+              <input type="file" accept="image/*" onChange={(e) => setBanner(e.target.files[0])} className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer" />
               {banner && <p className="text-xs text-green-400 mt-1">✓ {banner.name}</p>}
             </Field>
           </>)}
@@ -148,7 +148,7 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
           </button>
           <button onClick={() => { if (step === 1) { if (validateStep1()) setStep(2); } else handleSubmit(); }}
             disabled={loading}
-            className="flex-1 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2">
+            className="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2">
             {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating...</> : step === 1 ? "Next →" : "Create 🚀"}
           </button>
         </div>
@@ -176,7 +176,7 @@ function JoinCommunityModal({ onClose, onSuccess, showToast }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md" onClick={onClose}>
       <div className="bg-[#0d0d0d] border border-white/10 rounded-3xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
           <h2 className="text-xl font-bold">Join a Community</h2>
@@ -187,14 +187,14 @@ function JoinCommunityModal({ onClose, onSuccess, showToast }) {
           <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && handleJoin()}
             placeholder="e.g. ABC123XY" maxLength={12}
-            className={`w-full bg-white/5 border ${error ? "border-red-500/50" : "border-white/10"} rounded-2xl px-4 py-3 text-white text-center text-xl font-mono tracking-widest placeholder-gray-600 outline-none focus:border-purple-500 transition`} />
+            className={`w-full bg-white/5 border ${error ? "border-red-500/50" : "border-white/10"} rounded-2xl px-4 py-3 text-white text-center text-xl font-mono tracking-widest placeholder-gray-600 outline-none focus:border-brand-500 transition`} />
           {error && <p className="text-red-400 text-xs mt-2 text-center">{error}</p>}
           <p className="text-gray-600 text-xs mt-3 text-center">Ask your college admin for the invite code</p>
         </div>
         <div className="flex gap-3 px-6 pb-6">
           <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-white/10 text-gray-400 hover:text-white text-sm font-semibold transition">Cancel</button>
           <button onClick={handleJoin} disabled={loading || !code.trim()}
-            className="flex-1 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2">
+            className="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2">
             {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Joining...</> : "Join →"}
           </button>
         </div>
@@ -204,7 +204,7 @@ function JoinCommunityModal({ onClose, onSuccess, showToast }) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const iCls = (err) => `w-full bg-white/5 border ${err ? "border-red-500/50" : "border-white/8"} rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:border-purple-500 transition`;
+const iCls = (err) => `w-full bg-white/5 border ${err ? "border-red-500/50" : "border-white/8"} rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:border-brand-500 transition`;
 function Field({ label, error, hint, children }) {
   return (
     <div>
@@ -220,7 +220,7 @@ const ROLE_STYLE = {
   principal: "bg-blue-500/15 text-blue-300 border-blue-500/30",
   hod:       "bg-teal-500/15 text-teal-300 border-teal-500/30",
   teacher:   "bg-green-500/15 text-green-300 border-green-500/30",
-  student:   "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  student:   "bg-brand-500/15 text-brand-300 border-brand-500/30",
 };
 function RoleBadge({ role }) {
   return <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide ${ROLE_STYLE[role] || ROLE_STYLE.student}`}>{role}</span>;
@@ -262,16 +262,16 @@ export default function ProfileView() {
 
 
   if (authLoading) return (
-  <div className="min-h-screen bg-black flex items-center justify-center">
-    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+  <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
 if (!user) return (
-  <div className="min-h-screen bg-black flex items-center justify-center px-4">
+  <div className="min-h-screen bg-navy-900 flex items-center justify-center px-4">
     <div className="text-center">
       <p className="text-gray-400 mb-4">Please login to view your profile</p>
-      <button onClick={() => navigate("/login")} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button>
+      <button onClick={() => navigate("/login")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button>
     </div>
   </div>
 );
@@ -282,7 +282,7 @@ if (!user) return (
   const isAdmin  = isOwner || role === "principal"; // owner ya principal
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
 
       {showCreate && <CreateCommunityModal onClose={() => setShowCreate(false)} onSuccess={handleCommunitySuccess} showToast={showToast} />}
@@ -292,13 +292,13 @@ if (!user) return (
 
         {/* ── Profile card ─────────────────────────────────────────────── */}
         <div className="bg-white/[0.03] border border-white/8 rounded-3xl overflow-hidden">
-          <div className="h-24 bg-gradient-to-br from-purple-900/50 via-purple-800/20 to-transparent" />
+          <div className="h-24 bg-gradient-to-br from-brand-900/50 via-brand-800/20 to-transparent" />
           <div className="px-6 pb-6 -mt-12">
             <button onClick={() => setEnlargeAvatar(true)} className="cursor-zoom-in hover:scale-105 transition block">
               <img
-                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.username || "U")}&background=7c3aed&color=fff&bold=true`}
+                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.username || "U")}&background=5b54a4&color=fff&bold=true`}
                 alt={user.fullName}
-                className="w-24 h-24 rounded-full border-4 border-black object-cover ring-2 ring-purple-500"
+                className="w-24 h-24 rounded-full border-4 border-navy-900 object-cover ring-2 ring-brand-500"
               />
             </button>
             <div className="mt-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -341,15 +341,15 @@ if (!user) return (
             {/* Community card */}
             <div
               onClick={() => navigate(`/community/${collegeStatus.collegeId}`)}
-              className="bg-purple-950/30 border border-purple-500/25 rounded-3xl p-5 cursor-pointer hover:bg-purple-950/50 hover:border-purple-500/40 transition group"
+              className="bg-brand-950/30 border border-brand-500/25 rounded-3xl p-5 cursor-pointer hover:bg-brand-950/50 hover:border-brand-500/40 transition group"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-1">My Community</p>
+                  <p className="text-brand-400 text-[10px] font-bold uppercase tracking-widest mb-1">My Community</p>
                   <h3 className="text-lg font-bold truncate">{collegeStatus.collegeName}</h3>
                   <p className="text-gray-500 text-sm">{collegeStatus.university}</p>
                 </div>
-                <span className="text-purple-400 group-hover:translate-x-1 transition text-xl flex-shrink-0 mt-1">→</span>
+                <span className="text-brand-400 group-hover:translate-x-1 transition text-xl flex-shrink-0 mt-1">→</span>
               </div>
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {role && <RoleBadge role={role} />}
@@ -387,13 +387,13 @@ if (!user) return (
           /* ── Not joined — Create / Join ────────────────────────────────── */
           <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-6">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-purple-600/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🏫</div>
+              <div className="w-14 h-14 bg-brand-600/10 border border-brand-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🏫</div>
               <h3 className="font-bold text-lg">Join Your College Community</h3>
               <p className="text-gray-500 text-sm mt-1">Connect with classmates, share resources, and collaborate.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setShowJoin(true)}
-                className="py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm transition flex items-center justify-center gap-1.5">
+                className="py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm transition flex items-center justify-center gap-1.5">
                 🔗 Join Community
               </button>
               <button onClick={() => setShowCreate(true)}

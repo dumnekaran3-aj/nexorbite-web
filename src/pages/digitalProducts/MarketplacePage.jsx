@@ -45,7 +45,7 @@ export default function MarketplacePage() {
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
@@ -59,12 +59,12 @@ export default function MarketplacePage() {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="🔍 Search products..."
-            className="flex-1 bg-white/5 border border-white/8 rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:border-purple-500 transition"
+            className="flex-1 bg-white/5 border border-white/8 rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:border-brand-500 transition"
           />
           <select
             value={branch}
             onChange={(e) => { setBranch(e.target.value); setCategory(""); setPage(1); }}
-            className="bg-white/5 border border-white/8 rounded-2xl px-4 py-2.5 text-white text-sm outline-none focus:border-purple-500 transition"
+            className="bg-white/5 border border-white/8 rounded-2xl px-4 py-2.5 text-white text-sm outline-none focus:border-brand-500 transition"
           >
             <option value="">All Branches</option>
             {BRANCHES.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -73,7 +73,7 @@ export default function MarketplacePage() {
             <select
               value={category}
               onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-              className="bg-white/5 border border-white/8 rounded-2xl px-4 py-2.5 text-white text-sm outline-none focus:border-purple-500 transition"
+              className="bg-white/5 border border-white/8 rounded-2xl px-4 py-2.5 text-white text-sm outline-none focus:border-brand-500 transition"
             >
               <option value="">All Categories</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -83,11 +83,11 @@ export default function MarketplacePage() {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : products.length === 0 ? (
           <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-10 text-center">
-            <div className="w-14 h-14 bg-purple-600/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🔍</div>
+            <div className="w-14 h-14 bg-brand-600/10 border border-brand-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🔍</div>
             <h3 className="font-bold text-lg">No products found</h3>
             <p className="text-gray-500 text-sm mt-1">Try a different search or filter combination.</p>
           </div>

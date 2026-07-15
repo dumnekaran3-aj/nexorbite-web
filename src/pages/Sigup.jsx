@@ -25,7 +25,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-navy-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-md">
         <h2 className="text-3xl font-bold text-white mb-6 text-center">Create Account</h2>
         
@@ -36,7 +36,7 @@ export default function Signup() {
               type="text" 
               required
               onChange={(e) => setFormData({...formData, username: e.target.value})} 
-              className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none" 
+              className="w-full bg-navy-900 border border-white/10 rounded-lg p-3 text-white focus:border-brand-500 outline-none" 
             />
           </div>
           <div>
@@ -45,7 +45,7 @@ export default function Signup() {
               type="email" 
               required
               onChange={(e) => setFormData({...formData, email: e.target.value})} 
-              className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none" 
+              className="w-full bg-navy-900 border border-white/10 rounded-lg p-3 text-white focus:border-brand-500 outline-none" 
             />
           </div>
           <div>
@@ -54,17 +54,17 @@ export default function Signup() {
               type="password" 
               required
               onChange={(e) => setFormData({...formData, password: e.target.value})} 
-              className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none" 
+              className="w-full bg-navy-900 border border-white/10 rounded-lg p-3 text-white focus:border-brand-500 outline-none" 
             />
           </div>
           
-          <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition mt-4">
+          <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg transition mt-4">
             Sign Up
           </button>
         </form>
 
         <p className="text-gray-400 text-sm text-center mt-4">
-          Already have an account? <Link to="/login" className="text-purple-500 hover:underline">Login here</Link>
+          Already have an account? <Link to="/login" className="text-brand-500 hover:underline">Login here</Link>
         </p>
       </div>
     </div>

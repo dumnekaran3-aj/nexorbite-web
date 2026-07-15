@@ -33,7 +33,7 @@ function CommunityCard({ community, isPrivate, onOpen, onLeave, leavingId }) {
 
   return (
     <div className="bg-[#0f0f0f] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-      <div className="w-12 h-12 rounded-xl overflow-hidden bg-purple-600 flex items-center justify-center text-lg font-bold flex-shrink-0">
+      <div className="w-12 h-12 rounded-xl overflow-hidden bg-brand-600 flex items-center justify-center text-lg font-bold flex-shrink-0">
         {community.logo_url ? (
           <img src={community.logo_url} alt={community.name} className="w-full h-full object-cover" />
         ) : (
@@ -48,7 +48,7 @@ function CommunityCard({ community, isPrivate, onOpen, onLeave, leavingId }) {
             className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${
               isPrivate
                 ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
-                : "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                : "bg-brand-500/20 text-brand-300 border-brand-500/30"
             }`}
           >
             {isPrivate ? "Private" : "Public"}
@@ -68,7 +68,7 @@ function CommunityCard({ community, isPrivate, onOpen, onLeave, leavingId }) {
         <button
           type="button"
           onClick={() => onOpen(community.collegeId)}
-          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-full text-xs font-semibold transition"
+          className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 rounded-full text-xs font-semibold transition"
         >
           Open
         </button>
@@ -153,7 +153,7 @@ export default function MyCommunities() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-navy-900 text-white">
       <Navbar />
       <Toast toast={toast} />
 
@@ -172,13 +172,13 @@ export default function MyCommunities() {
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
               placeholder="Enter invite code"
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500 transition"
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500 transition"
             />
             <button
               type="button"
               disabled={joining || !inviteCode.trim()}
               onClick={handleJoin}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-sm font-semibold transition disabled:opacity-50"
+              className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-xl text-sm font-semibold transition disabled:opacity-50"
             >
               {joining ? "Joining…" : "Join"}
             </button>
@@ -187,7 +187,7 @@ export default function MyCommunities() {
 
         {fetching ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <>

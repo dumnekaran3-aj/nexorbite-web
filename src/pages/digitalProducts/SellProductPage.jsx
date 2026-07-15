@@ -14,7 +14,7 @@ import {
 
 // ── Shared field styling (same pattern as ProfileView's CreateCommunityModal) ─
 const iCls = (err) =>
-  `w-full bg-white/5 border ${err ? "border-red-500/50" : "border-white/8"} rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:border-purple-500 transition`;
+  `w-full bg-white/5 border ${err ? "border-red-500/50" : "border-white/8"} rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-600 outline-none focus:border-brand-500 transition`;
 
 function Field({ label, error, hint, children }) {
   return (
@@ -133,7 +133,7 @@ export default function SellProductPage() {
   const STEP_LABELS = ["Branch", "Details", "Files", "Review"];
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
 
       <div className="max-w-2xl mx-auto">
@@ -146,8 +146,8 @@ export default function SellProductPage() {
         <div className="flex items-center gap-2 mb-6">
           {STEP_LABELS.map((label, i) => (
             <div key={label} className="flex-1">
-              <div className={`h-1 rounded-full transition-all ${i + 1 <= step ? "bg-purple-600" : "bg-white/8"}`} />
-              <p className={`text-[10px] mt-1 font-semibold ${i + 1 === step ? "text-purple-400" : "text-gray-600"}`}>
+              <div className={`h-1 rounded-full transition-all ${i + 1 <= step ? "bg-brand-600" : "bg-white/8"}`} />
+              <p className={`text-[10px] mt-1 font-semibold ${i + 1 === step ? "text-brand-400" : "text-gray-600"}`}>
                 {label}
               </p>
             </div>
@@ -222,7 +222,7 @@ export default function SellProductPage() {
                       <button type="button" onClick={() => removeAttribute(i)} className="px-3 rounded-2xl border border-white/8 text-gray-500 hover:text-red-400 hover:border-red-500/40 transition">✕</button>
                     </div>
                   ))}
-                  <button type="button" onClick={addAttribute} className="text-xs font-semibold text-purple-400 hover:text-purple-300 transition">+ Add attribute</button>
+                  <button type="button" onClick={addAttribute} className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition">+ Add attribute</button>
                 </div>
               </Field>
 
@@ -241,7 +241,7 @@ export default function SellProductPage() {
             <>
               <Field label="Cover Image *" error={errors.cover} hint="Public thumbnail shown on product cards">
                 <input type="file" accept="image/*" onChange={(e) => setCover(e.target.files[0])}
-                  className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600/20 file:text-purple-300 hover:file:bg-purple-600/40 cursor-pointer" />
+                  className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer" />
                 {cover && <p className="text-xs text-green-400 mt-1">{fileLabel(cover)}</p>}
               </Field>
 
@@ -257,7 +257,7 @@ export default function SellProductPage() {
                     type="file"
                     accept={s.accept}
                     onChange={(e) => setAssetFiles((p) => ({ ...p, [s.slot]: e.target.files[0] }))}
-                    className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-600/20 file:text-purple-300 hover:file:bg-purple-600/40 cursor-pointer"
+                    className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer"
                   />
                   {assetFiles[s.slot] && <p className="text-xs text-green-400 mt-1">{fileLabel(assetFiles[s.slot])}</p>}
                 </Field>
@@ -276,7 +276,7 @@ export default function SellProductPage() {
               </div>
               <h3 className="text-lg font-bold">{form.title}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">{form.description}</p>
-              <p className="text-2xl font-bold text-purple-400">{Number(form.price) === 0 ? "Free" : `₹${form.price}`}</p>
+              <p className="text-2xl font-bold text-brand-400">{Number(form.price) === 0 ? "Free" : `₹${form.price}`}</p>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-white/5 rounded-xl px-3 py-2">
@@ -308,7 +308,7 @@ export default function SellProductPage() {
             <button
               onClick={() => (step < 4 ? nextFrom(step) : handleSubmit())}
               disabled={submitting}
-              className="flex-1 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2"
+              className="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Publishing...</>

@@ -43,7 +43,7 @@ export default function MyProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
@@ -53,7 +53,7 @@ export default function MyProductsPage() {
           </div>
           <button
             onClick={() => navigate("/sell-product")}
-            className="px-4 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold transition"
+            className="px-4 py-2.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold transition"
           >
             + New Listing
           </button>
@@ -61,14 +61,14 @@ export default function MyProductsPage() {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : products.length === 0 ? (
           <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-10 text-center">
-            <div className="w-14 h-14 bg-purple-600/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">📦</div>
+            <div className="w-14 h-14 bg-brand-600/10 border border-brand-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">📦</div>
             <h3 className="font-bold text-lg">No listings yet</h3>
             <p className="text-gray-500 text-sm mt-1 mb-5">Turn your projects into income — list your first bundle.</p>
-            <button onClick={() => navigate("/sell-product")} className="px-5 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm transition">
+            <button onClick={() => navigate("/sell-product")} className="px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm transition">
               💰 Sell Your First Project
             </button>
           </div>

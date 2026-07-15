@@ -22,7 +22,7 @@ function Toast({ toast }) {
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
 function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = false, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onCancel}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md" onClick={onCancel}>
       <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
         <p className="text-gray-400 text-sm mb-6 leading-relaxed">{message}</p>
@@ -31,7 +31,7 @@ function ConfirmDialog({ title, message, confirmLabel = "Confirm", danger = fals
           <button
             onClick={onConfirm}
             className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition ${
-              danger ? "bg-red-600 hover:bg-red-500" : "bg-purple-600 hover:bg-purple-500"
+              danger ? "bg-red-600 hover:bg-red-500" : "bg-brand-600 hover:bg-brand-500"
             }`}
           >
             {confirmLabel}
@@ -58,11 +58,11 @@ function ProfileModal({ member, onClose, onKick, onRoleChange, onSuspend, myId, 
     principal: "bg-blue-500/20 text-blue-300",
     hod: "bg-teal-500/20 text-teal-300",
     teacher: "bg-green-500/20 text-green-300",
-    student: "bg-purple-500/20 text-purple-300",
+    student: "bg-brand-500/20 text-brand-300",
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md" onClick={onClose}>
       <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         
         {/* Header */}
@@ -74,9 +74,9 @@ function ProfileModal({ member, onClose, onKick, onRoleChange, onSuspend, myId, 
         {/* Avatar + Info */}
         <div className="flex flex-col items-center mb-6">
           {avatar ? (
-            <img src={avatar} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-purple-500 mb-3" />
+            <img src={avatar} alt={name} className="w-20 h-20 rounded-full object-cover border-2 border-brand-500 mb-3" />
           ) : (
-            <div className="w-20 h-20 rounded-full bg-purple-700 flex items-center justify-center text-2xl font-bold text-white mb-3">
+            <div className="w-20 h-20 rounded-full bg-brand-700 flex items-center justify-center text-2xl font-bold text-white mb-3">
               {initials}
             </div>
           )}
@@ -106,7 +106,7 @@ function ProfileModal({ member, onClose, onKick, onRoleChange, onSuspend, myId, 
           <div className="flex flex-col gap-2">
             <button
               onClick={() => { onClose(); onRoleChange(member); }}
-              className="w-full py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 text-sm font-semibold transition"
+              className="w-full py-2.5 rounded-xl bg-brand-600/20 border border-brand-500/30 text-brand-300 hover:bg-brand-600/30 text-sm font-semibold transition"
             >
               Change Role
             </button>
@@ -172,7 +172,7 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md" onClick={onClose}>
       <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">Change Role</h3>
@@ -188,7 +188,7 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
               onClick={() => setRole(r)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition ${
                 role === r
-                  ? "border-purple-500 bg-purple-600/15 text-white"
+                  ? "border-brand-500 bg-brand-600/15 text-white"
                   : "border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20 hover:text-white"
               }`}
             >
@@ -197,7 +197,7 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
                 <p className="font-semibold capitalize text-sm">{r}</p>
                 <p className="text-xs text-gray-500">{ROLE_META[r].desc}</p>
               </div>
-              {role === r && <span className="ml-auto text-purple-400">✓</span>}
+              {role === r && <span className="ml-auto text-brand-400">✓</span>}
             </button>
           ))}
         </div>
@@ -206,7 +206,7 @@ function RoleModal({ member, onClose, onSuccess, showToast, isOwner }) {
           <button
             onClick={handleSave}
             disabled={loading || role === member.role}
-            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-bold transition"
+            className="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-bold transition"
           >
             {loading ? "Saving..." : "Save Role"}
           </button>
@@ -222,7 +222,7 @@ const ROLE_STYLE = {
   principal: "bg-blue-500/15 text-blue-300 border-blue-500/30",
   hod:       "bg-teal-500/15 text-teal-300 border-teal-500/30",
   teacher:   "bg-green-500/15 text-green-300 border-green-500/30",
-  student:   "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  student:   "bg-brand-500/15 text-brand-300 border-brand-500/30",
 };
 
 function RoleBadge({ role }) {
@@ -249,7 +249,7 @@ function MemberRow({ member, myId, onViewProfile }) {
       {avatar ? (
         <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-white/10" />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-purple-700 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+        <div className="w-10 h-10 rounded-full bg-brand-700 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
           {initials}
         </div>
       )}
@@ -318,7 +318,7 @@ function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md" onClick={onClose}>
       <div className="bg-zinc-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-white">Edit Community</h3>
@@ -337,7 +337,7 @@ function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">Click to upload banner</div>
             )}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold transition">
+            <div className="absolute inset-0 bg-navy-900/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold transition">
               Change Banner
             </div>
           </div>
@@ -357,7 +357,7 @@ function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
                 {college?.college_name?.[0]?.toUpperCase() || "C"}
               </div>
             )}
-            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-semibold transition">
+            <div className="absolute inset-0 bg-navy-900/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-semibold transition">
               Change
             </div>
           </div>
@@ -365,7 +365,7 @@ function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
             <p className="text-white text-sm font-semibold">{form.college_name || "Community"}</p>
             <button
               onClick={() => document.getElementById("logo-upload").click()}
-              className="text-purple-400 text-xs hover:text-purple-300 transition mt-0.5"
+              className="text-brand-400 text-xs hover:text-brand-300 transition mt-0.5"
             >
               Upload Logo
             </button>
@@ -387,13 +387,13 @@ function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
                   value={form[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition resize-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-brand-500 transition resize-none"
                 />
               ) : (
                 <input
                   value={form[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-purple-500 transition"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-brand-500 transition"
                 />
               )}
             </div>
@@ -404,7 +404,7 @@ function EditCommunityModal({ college, onClose, onSuccess, showToast }) {
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-semibold hover:text-white transition">
             Cancel
           </button>
-          <button onClick={handleSave} disabled={loading} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-bold transition">
+          <button onClick={handleSave} disabled={loading} className="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-sm font-bold transition">
             {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
@@ -544,14 +544,14 @@ export default function AdminPanel() {
 
   if (!collegeStatus || !["owner", "principal"].includes(collegeStatus.role)) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
       <Toast toast={toast} />
 
       {/* Kick confirm */}
@@ -685,16 +685,16 @@ export default function AdminPanel() {
 
         {/* ── Invite code (owner only) ─────────────────────────────────────── */}
         {isOwner && college?.invite_code && (
-          <div className="bg-purple-950/30 border border-purple-500/25 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="bg-brand-950/30 border border-brand-500/25 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-1">Invite Code</p>
+              <p className="text-brand-400 text-[10px] font-bold uppercase tracking-widest mb-1">Invite Code</p>
               <p className="text-2xl font-mono font-bold tracking-widest text-white">{college.invite_code}</p>
               <p className="text-gray-500 text-xs mt-0.5">Share with students to join</p>
             </div>
             <button
               onClick={copyInviteCode}
               className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
-                copied ? "bg-green-600 text-white" : "bg-purple-600 hover:bg-purple-500 text-white"
+                copied ? "bg-green-600 text-white" : "bg-brand-600 hover:bg-brand-500 text-white"
               }`}
             >
               {copied ? "✓ Copied!" : "📋 Copy Code"}
@@ -709,7 +709,7 @@ export default function AdminPanel() {
               <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Community Info</p>
               <button
                 onClick={() => navigate(`/community/${college._id}`)}
-                className="text-xs text-purple-400 hover:text-purple-300 transition"
+                className="text-xs text-brand-400 hover:text-brand-300 transition"
               >
                 Open Community →
               </button>
@@ -736,12 +736,12 @@ export default function AdminPanel() {
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search name..."
-                className="bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500 transition w-40"
+                className="bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-brand-500 transition w-40"
               />
               <select
                 value={roleFilter}
                 onChange={(e) => { setRoleFilter(e.target.value); fetchMembers(search, e.target.value); }}
-                className="bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-gray-300 outline-none focus:border-purple-500 transition cursor-pointer"
+                className="bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-gray-300 outline-none focus:border-brand-500 transition cursor-pointer"
               >
                 <option value="">All Roles</option>
                 {["student", "teacher", "hod", "principal", "owner"].map((r) => (
@@ -754,7 +754,7 @@ export default function AdminPanel() {
           <div className="p-4 space-y-2">
             {loading && (
               <div className="flex justify-center py-12">
-                <div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-7 h-7 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
             {!loading && filteredMembers.length === 0 && (

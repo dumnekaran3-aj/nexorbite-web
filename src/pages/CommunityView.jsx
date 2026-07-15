@@ -17,7 +17,6 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import { getSocket } from "../lib/socket";
-import { leaveCommunity } from "../lib/community.api";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const Icon = {
@@ -63,7 +62,7 @@ const EMOJI_LIST = [
 
 // ─── RoleBadge ────────────────────────────────────────────────────────────────
 const RoleBadge = ({ role }) => {
-  const map = { owner:"bg-yellow-500/20 text-yellow-300 border-yellow-500/30", principal:"bg-blue-500/20 text-blue-300 border-blue-500/30", hod:"bg-teal-500/20 text-teal-300 border-teal-500/30", teacher:"bg-green-500/20 text-green-300 border-green-500/30", student:"bg-purple-500/20 text-purple-300 border-purple-500/30" };
+  const map = { owner:"bg-yellow-500/20 text-yellow-300 border-yellow-500/30", principal:"bg-blue-500/20 text-blue-300 border-blue-500/30", hod:"bg-teal-500/20 text-teal-300 border-teal-500/30", teacher:"bg-green-500/20 text-green-300 border-green-500/30", student:"bg-brand-500/20 text-brand-300 border-brand-500/30" };
   if (!role) return null;
   return <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${map[role] || map.student}`}>{role}</span>;
 };
@@ -71,7 +70,7 @@ const RoleBadge = ({ role }) => {
 // ─── ImageModal ───────────────────────────────────────────────────────────────
 function ImageModal({ src, name, onClose }) {
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-navy-900/90 backdrop-blur-sm" onClick={onClose}>
       <img src={src} alt={name} className="max-w-[90vw] max-h-[90vh] rounded-2xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
     </div>
   );
@@ -162,7 +161,7 @@ function VoiceRecorder({ onSend, onCancel, disabled }) {
       {!blobUrl ? (
         <>
           <button type="button" onClick={recording ? stopRec : startRec} disabled={disabled}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition flex-shrink-0 ${recording ? "bg-red-600 hover:bg-red-500 animate-pulse" : "bg-purple-600 hover:bg-purple-500"}`}>
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition flex-shrink-0 ${recording ? "bg-red-600 hover:bg-red-500 animate-pulse" : "bg-brand-600 hover:bg-brand-500"}`}>
             {recording ? Icon.stop : Icon.mic}
           </button>
           <div className="flex-1">
@@ -177,7 +176,7 @@ function VoiceRecorder({ onSend, onCancel, disabled }) {
           <VoicePlayer src={blobUrl} duration={seconds} />
           <div className="flex gap-2 flex-shrink-0">
             <button type="button" onClick={cleanup} className="w-8 h-8 bg-red-600/20 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center hover:bg-red-600/40 transition">{Icon.trash}</button>
-            <button type="button" onClick={() => { onSend(blob, seconds); cleanup(); }} className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-purple-500 transition">{Icon.send2}</button>
+            <button type="button" onClick={() => { onSend(blob, seconds); cleanup(); }} className="w-8 h-8 bg-brand-600 text-white rounded-full flex items-center justify-center hover:bg-brand-500 transition">{Icon.send2}</button>
           </div>
         </>
       )}
@@ -194,7 +193,7 @@ function SmartText({ text }) {
     <p className="px-3 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap text-white">
       {parts.map((part, i) => {
         if (/^https?:\/\//.test(part)) {
-          return <a key={i} href={part} target="_blank" rel="noreferrer" className="underline text-purple-300 hover:text-purple-200 inline-flex items-center gap-0.5">{Icon.link}{part}</a>;
+          return <a key={i} href={part} target="_blank" rel="noreferrer" className="underline text-brand-300 hover:text-brand-200 inline-flex items-center gap-0.5">{Icon.link}{part}</a>;
         }
         if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(part)) {
           return <a key={i} href={`mailto:${part}`} className="underline text-blue-300 hover:text-blue-200">{part}</a>;
@@ -286,20 +285,20 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
     >
       {/* Swipe reply hint */}
       {swipeX < -20 && (
-        <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 text-purple-400 opacity-80">
+        <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 text-brand-400 opacity-80">
           {Icon.reply}
         </div>
       )}
 
       {/* Reply preview */}
       {msg.replyTo && (
-        <div className={`flex items-start gap-1 mb-1 max-w-[75%] px-2 py-1 rounded-xl border-l-2 border-purple-500 bg-white/5 text-xs text-gray-400 ${isMine ? "mr-1" : "ml-1"}`}>
+        <div className={`flex items-start gap-1 mb-1 max-w-[75%] px-2 py-1 rounded-xl border-l-2 border-brand-500 bg-white/5 text-xs text-gray-400 ${isMine ? "mr-1" : "ml-1"}`}>
           <span className="truncate">{msg.replyTo?.text || "Media"}</span>
         </div>
       )}
 
       {/* Bubble */}
-      <div className={`relative max-w-[75%] rounded-2xl overflow-hidden ${isMine ? "bg-purple-600 rounded-tr-sm" : "bg-white/10 rounded-tl-sm"} ${isTemp ? "opacity-60" : ""} ${isFailed ? "border border-red-500" : ""} transition-opacity`}>
+      <div className={`relative max-w-[75%] rounded-2xl overflow-hidden ${isMine ? "bg-brand-600 rounded-tr-sm" : "bg-white/10 rounded-tl-sm"} ${isTemp ? "opacity-60" : ""} ${isFailed ? "border border-red-500" : ""} transition-opacity`}>
         {/* FIX #1: mediaUrl se image show hogi chahe reload ho — src always mediaUrl */}
         {isImage && (
           <button type="button" onClick={() => onImageClick(msg.mediaUrl)} className="block w-full">
@@ -327,7 +326,7 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
 
       <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMine ? "flex-row-reverse" : ""}`}>
         <span className="text-[9px] text-gray-600">{isTemp ? "sending..." : isFailed ? "failed ✕" : fmtTime(msg.createdAt)}</span>
-        {isMine && !isTemp && <span className={isSeen ? "text-purple-400" : "text-gray-600"}>{Icon.seendbl}</span>}
+        {isMine && !isTemp && <span className={isSeen ? "text-brand-400" : "text-gray-600"}>{Icon.seendbl}</span>}
       </div>
 
       {menuOpen && <MsgMenu msg={msg} isMine={isMine} onReply={onReply} onDeleteMe={onDeleteMe} onDeleteAll={onDeleteAll} onReact={handleReact} onClose={() => setMenuOpen(false)} />}
@@ -359,7 +358,7 @@ function MediaGallery({ chatId, friend, onClose, onImageClick }) {
   const files  = media.filter((m) => m.mediaType === "file");
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-900/80 backdrop-blur-sm">
       <div className="bg-[#111] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md h-[80vh] flex flex-col overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 flex-shrink-0">
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">{Icon.back}</button>
@@ -372,13 +371,13 @@ function MediaGallery({ chatId, friend, onClose, onImageClick }) {
         <div className="flex border-b border-white/10 flex-shrink-0">
           {[["images","Photos",images.length],["videos","Videos",videos.length],["files","Files",files.length]].map(([key,label,count]) => (
             <button key={key} type="button" onClick={() => setTab(key)}
-              className={`flex-1 py-2.5 text-xs font-semibold transition ${tab===key ? "text-purple-400 border-b-2 border-purple-400" : "text-gray-500 hover:text-white"}`}>
+              className={`flex-1 py-2.5 text-xs font-semibold transition ${tab===key ? "text-brand-400 border-b-2 border-brand-400" : "text-gray-500 hover:text-white"}`}>
               {label} {count > 0 && <span className="ml-1 text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full">{count}</span>}
             </button>
           ))}
         </div>
         <div className="flex-1 overflow-y-auto p-3 min-h-0">
-          {loading && <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>}
+          {loading && <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>}
           {!loading && tab === "images" && (
             images.length === 0
               ? <p className="text-center text-gray-600 text-sm py-12">No images yet</p>
@@ -685,7 +684,7 @@ function ChatPanel({ friend, myId, onClose }) {
   };
 
   if (!friendId) return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/70">
       <div className="bg-[#111] border border-white/10 rounded-3xl p-8 text-center">
         <p className="text-red-400 mb-4">Friend data missing.</p>
         <button type="button" onClick={onClose} className="px-4 py-2 bg-white/10 rounded-full text-sm">Close</button>
@@ -699,26 +698,26 @@ function ChatPanel({ friend, myId, onClose }) {
       {/* FIX #4: MediaGallery */}
       {showGallery && <MediaGallery chatId={chatIdRef.current} friend={friend} onClose={() => setShowGallery(false)} onImageClick={(src) => { setShowGallery(false); setViewImg(src); }} />}
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-900/70 backdrop-blur-sm">
         <div className="bg-[#0f0f0f] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md h-[90vh] sm:h-[640px] flex flex-col overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414] flex-shrink-0">
             <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-white transition">{Icon.back}</button>
             <div className="relative flex-shrink-0">
-              <img src={friend.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=7c3aed&color=fff&bold=true`} alt={friend.fullName} className="w-9 h-9 rounded-full object-cover" />
+              <img src={friend.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=5b54a4&color=fff&bold=true`} alt={friend.fullName} className="w-9 h-9 rounded-full object-cover" />
               {friendOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#141414]" />}
             </div>
             {/* FIX #4: name pe click se gallery khulegi */}
             <div className="flex-1 min-w-0">
               <button type="button" onClick={() => chatIdRef.current && setShowGallery(true)}
-                className="font-semibold text-sm truncate hover:text-purple-300 transition text-left w-full flex items-center gap-1">
+                className="font-semibold text-sm truncate hover:text-brand-300 transition text-left w-full flex items-center gap-1">
                 {friend.fullName || friend.username}
                 <span className="text-gray-600 scale-75">{Icon.gallery}</span>
               </button>
               {/* FIX #3 + #7: typing indicator aur last active */}
               <p className="text-[10px]">
-                {typing ? <span className="text-purple-400 animate-pulse">typing...</span> : lastSeenText()}
+                {typing ? <span className="text-brand-400 animate-pulse">typing...</span> : lastSeenText()}
               </p>
             </div>
             <div title={isReady ? "Connected" : loading ? "Connecting..." : "Error"} className={`w-2 h-2 rounded-full flex-shrink-0 ${isReady ? "bg-green-500" : loading ? "bg-yellow-500 animate-pulse" : "bg-red-500"}`} />
@@ -726,11 +725,11 @@ function ChatPanel({ friend, myId, onClose }) {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
-            {loading && <div className="flex flex-col items-center mt-12 gap-3"><div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/><p className="text-xs text-gray-500">Loading...</p></div>}
+            {loading && <div className="flex flex-col items-center mt-12 gap-3"><div className="w-7 h-7 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/><p className="text-xs text-gray-500">Loading...</p></div>}
             {!loading && chatError && !isReady && (
               <div className="mt-8 px-4 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
                 <p className="text-red-400 text-sm mb-3">{chatError}</p>
-                <button type="button" onClick={handleRetry} className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-full transition">Retry</button>
+                <button type="button" onClick={handleRetry} className="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-full transition">Retry</button>
               </div>
             )}
             {!loading && !chatError && messages.length === 0 && isReady && <p className="text-center text-gray-600 text-sm mt-12">Say hello! 👋</p>}
@@ -743,7 +742,7 @@ function ChatPanel({ friend, myId, onClose }) {
                   onReply={setReplyTo} onDeleteMe={deleteForMe} onDeleteAll={deleteForAll} onImageClick={setViewImg} />
               );
             })}
-            {uploading && <div className="flex justify-end mt-1"><div className="px-4 py-2 bg-purple-600/40 rounded-2xl text-xs text-gray-300 flex items-center gap-2"><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>Uploading...</div></div>}
+            {uploading && <div className="flex justify-end mt-1"><div className="px-4 py-2 bg-brand-600/40 rounded-2xl text-xs text-gray-300 flex items-center gap-2"><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>Uploading...</div></div>}
             <div ref={bottomRef} />
           </div>
 
@@ -752,7 +751,7 @@ function ChatPanel({ friend, myId, onClose }) {
           {replyTo && (
             <div className="mx-3 mb-1 px-3 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between gap-2 flex-shrink-0">
               <div className="min-w-0">
-                <p className="text-[10px] text-purple-400 font-semibold mb-0.5">Replying to</p>
+                <p className="text-[10px] text-brand-400 font-semibold mb-0.5">Replying to</p>
                 <p className="text-xs text-gray-400 truncate">{replyTo.text || "Media"}</p>
               </div>
               <button type="button" onClick={() => setReplyTo(null)} className="text-gray-500 hover:text-white flex-shrink-0">{Icon.x}</button>
@@ -786,8 +785,8 @@ function ChatPanel({ friend, myId, onClose }) {
                 onClose={() => setShowEmoji(false)}
               />
             )}
-            <button type="button" onClick={() => { setShowEmoji((v) => !v); setShowAttach(false); setShowVoice(false); }} disabled={!isReady} className="text-gray-500 hover:text-purple-400 disabled:opacity-30 transition p-1 flex-shrink-0">{Icon.emoji}</button>
-            <button type="button" onClick={() => { setShowAttach((v) => !v); setShowEmoji(false); setShowVoice(false); }} disabled={!isReady} className="text-gray-500 hover:text-purple-400 disabled:opacity-30 transition p-1 flex-shrink-0">{Icon.attach}</button>
+            <button type="button" onClick={() => { setShowEmoji((v) => !v); setShowAttach(false); setShowVoice(false); }} disabled={!isReady} className="text-gray-500 hover:text-brand-400 disabled:opacity-30 transition p-1 flex-shrink-0">{Icon.emoji}</button>
+            <button type="button" onClick={() => { setShowAttach((v) => !v); setShowEmoji(false); setShowVoice(false); }} disabled={!isReady} className="text-gray-500 hover:text-brand-400 disabled:opacity-30 transition p-1 flex-shrink-0">{Icon.attach}</button>
 
             {/* FIX #2: Android keyboard — enterKeyHint="send", no readOnly toggle */}
             <input
@@ -801,7 +800,7 @@ function ChatPanel({ friend, myId, onClose }) {
               autoCorrect="off"
               placeholder={loading ? "Connecting..." : !isReady ? (chatError ? "Error — Retry ↑" : "Connecting...") : "Message..."}
               disabled={!isReady || loading}
-              className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500 disabled:opacity-40 transition min-w-0"
+              className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-brand-500 disabled:opacity-40 transition min-w-0"
             />
 
             {/* Mic button — only when text empty */}
@@ -813,7 +812,7 @@ function ChatPanel({ friend, myId, onClose }) {
             )}
 
             <button type="button" onClick={send} disabled={!text.trim() || !isReady || sending}
-              className="w-9 h-9 bg-purple-600 hover:bg-purple-500 disabled:opacity-30 rounded-full flex items-center justify-center transition flex-shrink-0">
+              className="w-9 h-9 bg-brand-600 hover:bg-brand-500 disabled:opacity-30 rounded-full flex items-center justify-center transition flex-shrink-0">
               {sending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : Icon.send2}
             </button>
           </div>
@@ -834,26 +833,26 @@ function FeedTab({ navigate }) {
     hasFetched.current = true;
     (async () => { try { const r = await api.get("/api/ecosystem/feed/get-feed"); setItems(r.data.posts || r.data.feedItems || []); } catch {} finally { setLoading(false); } })();
   }, []);
-  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
   if (!items.length) return <div className="text-center py-16"><div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">{Icon.shop}</div><p className="text-gray-500 text-sm">No products in feed yet.</p></div>;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {items.map((item, i) => {
         const p = item.product || {};
         return (
-          <div key={item._id||i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-purple-500/50 transition">
+          <div key={item._id||i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-brand-500/50 transition">
             {p.thumbnailUrl && <img src={p.thumbnailUrl} alt={p.title} className="w-full h-40 object-cover"/>}
             <div className="p-4">
-              <span className="text-purple-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>
+              <span className="text-brand-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>
               <h4 className="font-semibold text-sm mt-1 mb-1 line-clamp-1">{p.title}</h4>
               <p className="text-gray-500 text-xs line-clamp-2 mb-3">{p.description}</p>
               <div className="flex items-center justify-between">
-                <span className="text-purple-400 font-bold text-sm">{p.isPaid ? `₹${p.price}` : "Free"}</span>
+                <span className="text-brand-400 font-bold text-sm">{p.isPaid ? `₹${p.price}` : "Free"}</span>
                 <div className="flex items-center gap-3 text-xs text-gray-600"><span>{p.salesCount||0} sold</span><span>{p.viewCount||0} views</span></div>
               </div>
               {item.seller && (
                 <button type="button" onClick={() => navigate(`/profile/${item.seller._id}`)} className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 w-full text-left hover:opacity-80 transition">
-                  <img src={item.seller.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(item.seller.fullName||"U")}&background=7c3aed&color=fff`} alt={item.seller.fullName} className="w-6 h-6 rounded-full object-cover"/>
+                  <img src={item.seller.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(item.seller.fullName||"U")}&background=5b54a4&color=fff`} alt={item.seller.fullName} className="w-6 h-6 rounded-full object-cover"/>
                   <span className="text-xs text-gray-500">{item.seller.fullName}</span>
                 </button>
               )}
@@ -875,7 +874,7 @@ function SuggestionsTab({ navigate, sentIds, friendIds, onConnect }) {
     hasFetched.current = true;
     (async () => { try { const res = await api.get("/api/ecosystem/members/same-branch"); setUsers(res.data.students||[]); } catch { setUsers([]); } finally { setLoading(false); } })();
   }, []);
-  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
   if (!users.length) return <p className="text-center text-gray-500 py-16 text-sm">No suggestions.</p>;
   return (
     <div className="space-y-2">
@@ -883,13 +882,13 @@ function SuggestionsTab({ navigate, sentIds, friendIds, onConnect }) {
         const uid = String(u._id); const isFriend = friendIds.has(uid); const isSent = sentIds.has(uid);
         return (
           <div key={u._id} className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 transition">
-            <button type="button" onClick={() => navigate(`/profile/${u._id}`)}><img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=7c3aed&color=fff`} alt={u.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+            <button type="button" onClick={() => navigate(`/profile/${u._id}`)}><img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=5b54a4&color=fff`} alt={u.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${u._id}`)}>
               <p className="font-semibold text-sm truncate">{u.fullName}</p>
               <p className="text-xs text-gray-500 truncate">@{u.username} · {u.stream||"—"}</p>
               <RoleBadge role={u.collegeRole}/>
             </div>
-            {!isFriend && <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-gray-700/50 text-gray-500 cursor-not-allowed":"bg-purple-600 hover:bg-purple-500 text-white"}`}>{isSent?"Sent":"+ Connect"}</button>}
+            {!isFriend && <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-gray-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"+ Connect"}</button>}
           </div>
         );
       })}
@@ -902,16 +901,16 @@ function MemberCard({ member, sentIds, onConnect, onChat, onProfile, friendIds }
   const uid = String(member._id); const isFriend = friendIds.has(uid); const isSent = sentIds.has(uid);
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 transition">
-      <button type="button" onClick={() => onProfile(member)} className="flex-shrink-0"><img src={member.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName||"U")}&background=7c3aed&color=fff`} alt={member.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+      <button type="button" onClick={() => onProfile(member)} className="flex-shrink-0"><img src={member.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName||"U")}&background=5b54a4&color=fff`} alt={member.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onProfile(member)}>
-        <p className="font-semibold text-sm truncate hover:text-purple-300">{member.fullName}</p>
+        <p className="font-semibold text-sm truncate hover:text-brand-300">{member.fullName}</p>
         <p className="text-xs text-gray-500 truncate">@{member.username} · {member.stream||"—"}</p>
         <div className="mt-1"><RoleBadge role={member.role||member.collegeRole}/></div>
       </div>
       <div className="flex gap-2 flex-shrink-0">
         {isFriend
-          ? <button type="button" onClick={() => onChat(member)} className="px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-purple-600/40 transition">{Icon.chat} Chat</button>
-          : <button type="button" onClick={() => onConnect(member._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-gray-700/50 text-gray-500 cursor-not-allowed":"bg-purple-600 hover:bg-purple-500 text-white"}`}>{isSent?"Sent":"Connect"}</button>}
+          ? <button type="button" onClick={() => onChat(member)} className="px-3 py-1.5 bg-brand-600/20 text-brand-400 border border-brand-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-brand-600/40 transition">{Icon.chat} Chat</button>
+          : <button type="button" onClick={() => onConnect(member._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-gray-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"Connect"}</button>}
       </div>
     </div>
   );
@@ -923,7 +922,7 @@ function RequestCard({ request, type, onAccept, onDecline, navigate }) {
   if (!person?._id) return null;
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-4 py-3">
-      <button type="button" onClick={() => navigate(`/profile/${person._id}`)}><img src={person.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(person.fullName||"U")}&background=7c3aed&color=fff`} alt={person.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+      <button type="button" onClick={() => navigate(`/profile/${person._id}`)}><img src={person.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(person.fullName||"U")}&background=5b54a4&color=fff`} alt={person.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${person._id}`)}>
         <p className="font-semibold text-sm truncate">{person.fullName}</p>
         <p className="text-xs text-gray-500">@{person.username}</p>
@@ -941,12 +940,12 @@ function RequestCard({ request, type, onAccept, onDecline, navigate }) {
 function FriendRow({ friend, onChat, navigate }) {
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-4 py-3">
-      <button type="button" onClick={() => navigate(`/profile/${friend._id}`)}><img src={friend.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=7c3aed&color=fff`} alt={friend.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+      <button type="button" onClick={() => navigate(`/profile/${friend._id}`)}><img src={friend.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=5b54a4&color=fff`} alt={friend.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${friend._id}`)}>
         <p className="font-semibold text-sm truncate">{friend.fullName}</p>
         <p className="text-xs text-gray-500 truncate">@{friend.username}</p>
       </div>
-      <button type="button" onClick={() => onChat(friend)} className="px-3 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-purple-600/40 transition flex-shrink-0">{Icon.chat} Chat</button>
+      <button type="button" onClick={() => onChat(friend)} className="px-3 py-1.5 bg-brand-600/20 text-brand-400 border border-brand-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-brand-600/40 transition flex-shrink-0">{Icon.chat} Chat</button>
     </div>
   );
 }
@@ -956,12 +955,12 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
   if (!u?._id) return null;
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/70 backdrop-blur-sm" onClick={onClose}>
         <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative" onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white">{Icon.x}</button>
           <div className="flex flex-col items-center text-center">
             <button type="button" onClick={() => setEnlargeAvatar(true)} className="cursor-zoom-in hover:scale-105 transition">
-              <img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=7c3aed&color=fff&bold=true`} alt={u.fullName} className="w-20 h-20 rounded-full object-cover border-2 border-purple-500"/>
+              <img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=5b54a4&color=fff&bold=true`} alt={u.fullName} className="w-20 h-20 rounded-full object-cover border-2 border-brand-500"/>
             </button>
             <h3 className="text-xl font-bold mt-3">{u.fullName}</h3>
             <p className="text-gray-500 text-sm">@{u.username}</p>
@@ -970,8 +969,8 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
           </div>
           <div className="flex gap-3 mt-6">
             {isFriend
-              ? <button type="button" onClick={() => { onClose(); onChat(u); }} className="flex-1 bg-purple-600 hover:bg-purple-500 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition">{Icon.chat} Message</button>
-              : <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${isSent?"bg-gray-700 text-gray-400 cursor-not-allowed":"bg-purple-600 hover:bg-purple-500 text-white"}`}>{isSent?"Request Sent":"Connect"}</button>}
+              ? <button type="button" onClick={() => { onClose(); onChat(u); }} className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition">{Icon.chat} Message</button>
+              : <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${isSent?"bg-gray-700 text-gray-400 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Request Sent":"Connect"}</button>}
             <button type="button" onClick={() => { onClose(); onNavigate(`/profile/${u._id}`); }} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition border border-white/10">View Profile</button>
           </div>
         </div>
@@ -1001,8 +1000,6 @@ export default function CommunityView() {
   const [showInfo, setShowInfo]             = useState(false);
   const [toast, setToast]                   = useState(null);
   const [hasFetched, setHasFetched]         = useState(false);
-  const [myRole, setMyRole]                 = useState(null);
-  const [leaving, setLeaving]               = useState(false);
 
   const friendIds = useMemo(() => new Set(friends.map((f) => String(f._id))), [friends]);
 
@@ -1022,10 +1019,7 @@ export default function CommunityView() {
         api.get("/api/ecosystem/friends/requests/incoming"),
         api.get("/api/ecosystem/friends/requests/outgoing"),
       ]);
-      if (colRes.status === "fulfilled") {
-        setCollege(colRes.value.data?.college || null);
-        setMyRole(colRes.value.data?.myRole || null);
-      }
+      if (colRes.status === "fulfilled") setCollege(colRes.value.data?.college || null);
       if (memRes.status === "fulfilled") setMembers(memRes.value.data?.members || []);
       if (friRes.status === "fulfilled") setFriends(friRes.value.data?.friends || []);
       if (incRes.status === "fulfilled") setIncoming(incRes.value.data?.requests || []);
@@ -1042,26 +1036,6 @@ export default function CommunityView() {
     socket.on("new_friend_request", onNewReq);
     return () => socket.off("new_friend_request", onNewReq);
   }, [myId, showToast]);
-
-  // MULTI-COMMUNITY (Day 1): self-exit for this community. Owners cannot
-  // leave their own community (backend also enforces this with a 403 —
-  // hiding the button for owners is just a clearer UX signal).
-  const handleLeaveCommunity = async () => {
-    if (!college?._id || leaving) return;
-    if (!window.confirm(`Leave "${college.college_name}"? You can rejoin later with an invite code.`)) return;
-    setLeaving(true);
-    try {
-      const res = await leaveCommunity(college._id);
-      if (res.success) {
-        showToast("Left community");
-        navigate("/");
-      } else {
-        showToast(res.msg || "Could not leave community", "error");
-      }
-    } finally {
-      setLeaving(false);
-    }
-  };
 
   const sendRequest = async (userId) => {
     try { await api.post("/api/ecosystem/friends/request", { to: userId }); setSentIds((prev) => new Set([...prev, String(userId)])); showToast("Request sent!"); }
@@ -1087,20 +1061,20 @@ export default function CommunityView() {
     { key:"feed",        label:"Feed",     icon:Icon.feed,    count:null },
   ];
 
-  if (authLoading) return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>;
-  if (!myId) return <div className="min-h-screen bg-black flex items-center justify-center px-4"><div className="text-center"><p className="text-gray-400 mb-4">Login for community access</p><button type="button" onClick={() => navigate("/login")} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button></div></div>;
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>;
-  if (!college && hasFetched) return <div className="min-h-screen bg-black flex items-center justify-center px-4"><div className="text-center max-w-sm"><div className="w-16 h-16 bg-purple-600/10 border border-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-purple-500">{Icon.users}</div><h2 className="text-2xl font-bold mb-2">community not found</h2><p className="text-gray-500 text-sm mb-6">Invite code se college join karo.</p><button type="button" onClick={() => navigate("/")} className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Go Home</button></div></div>;
-  if (!college) return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (authLoading) return <div className="min-h-screen bg-navy-900 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (!myId) return <div className="min-h-screen bg-navy-900 flex items-center justify-center px-4"><div className="text-center"><p className="text-gray-400 mb-4">Login for community access</p><button type="button" onClick={() => navigate("/login")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button></div></div>;
+  if (loading) return <div className="min-h-screen bg-navy-900 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (!college && hasFetched) return <div className="min-h-screen bg-navy-900 flex items-center justify-center px-4"><div className="text-center max-w-sm"><div className="w-16 h-16 bg-brand-600/10 border border-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-500">{Icon.users}</div><h2 className="text-2xl font-bold mb-2">community not found</h2><p className="text-gray-500 text-sm mb-6">Invite code se college join karo.</p><button type="button" onClick={() => navigate("/")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Go Home</button></div></div>;
+  if (!college) return <div className="min-h-screen bg-navy-900 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-navy-900 text-white">
       {toast && <div className={`fixed top-4 right-4 z-[200] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg ${toast.type==="error"?"bg-red-600":"bg-green-600"} text-white`}>{toast.msg}</div>}
 
-      <div className="bg-gradient-to-b from-purple-900/30 to-transparent pt-24 pb-8 px-4">
+      <div className="bg-gradient-to-b from-brand-900/30 to-transparent pt-24 pb-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-start gap-5">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-purple-600 flex items-center justify-center text-2xl font-extrabold">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-brand-600 flex items-center justify-center text-2xl font-extrabold">
               {college.logo_url ? <img src={college.logo_url} alt="logo" className="w-full h-full object-cover"/> : college.college_name?.[0]?.toUpperCase()||"C"}
             </div>
             <div className="flex-1 min-w-0">
@@ -1116,12 +1090,12 @@ export default function CommunityView() {
         </div>
       </div>
 
-      <div className="sticky top-0 z-30 bg-black/90 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-0 z-30 bg-navy-900/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto scrollbar-none py-1">
             {tabs.map((t) => (
               <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition flex-shrink-0 ${activeTab===t.key?"bg-purple-600 text-white":"text-gray-500 hover:text-white hover:bg-white/5"}`}>
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition flex-shrink-0 ${activeTab===t.key?"bg-brand-600 text-white":"text-gray-500 hover:text-white hover:bg-white/5"}`}>
                 {t.icon}{t.label}
                 {t.count !== null && t.count > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab===t.key?"bg-white/20 text-white":"bg-white/10 text-gray-400"}`}>{t.count}</span>}
               </button>
@@ -1140,7 +1114,7 @@ export default function CommunityView() {
       </div>
 
       {showInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/70 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
           <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">Community Info</h3>
             <div className="space-y-3 text-sm">
@@ -1150,21 +1124,7 @@ export default function CommunityView() {
               <div className="flex justify-between"><span className="text-gray-500">Status</span><span className={college.status==="active"?"text-green-400":"text-yellow-400"}>{college.status}</span></div>
               {college.description && <div className="pt-3 border-t border-white/10"><p className="text-gray-500 text-xs mb-1">About</p><p className="text-gray-300 text-sm">{college.description}</p></div>}
             </div>
-
-            {/* MULTI-COMMUNITY (Day 1): self-exit — hidden for the owner,
-                since owners must delete/transfer the community instead. */}
-            {myRole !== "owner" && (
-              <button
-                type="button"
-                disabled={leaving}
-                onClick={handleLeaveCommunity}
-                className="mt-4 w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-xl text-sm font-semibold transition disabled:opacity-50"
-              >
-                {leaving ? "Leaving…" : "Leave Community"}
-              </button>
-            )}
-
-            <button type="button" onClick={() => setShowInfo(false)} className="mt-3 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Close</button>
+            <button type="button" onClick={() => setShowInfo(false)} className="mt-6 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Close</button>
           </div>
         </div>
       )}

@@ -6,11 +6,11 @@ export default function MarketplaceQuickLinks() {
 
   return (
     <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-5">
-      <p className="text-purple-400 text-[10px] font-bold uppercase tracking-widest mb-3">Marketplace</p>
+      <p className="text-brand-400 text-[10px] font-bold uppercase tracking-widest mb-3">Marketplace</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <button
           onClick={() => navigate("/sell-product")}
-          className="py-3 rounded-2xl bg-gradient-to-r from-purple-600/20 to-purple-500/10 border border-purple-500/30 hover:border-purple-500/50 text-purple-300 font-bold text-sm transition flex items-center justify-center gap-1.5"
+          className="py-3 rounded-2xl bg-gradient-to-r from-brand-600/20 to-brand-500/10 border border-brand-500/30 hover:border-brand-500/50 text-brand-300 font-bold text-sm transition flex items-center justify-center gap-1.5"
         >
           💰 Sell a Project
         </button>

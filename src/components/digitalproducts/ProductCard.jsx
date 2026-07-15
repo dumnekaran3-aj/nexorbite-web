@@ -7,9 +7,9 @@ export default function ProductCard({ product, onClick, footer }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white/[0.03] border border-white/8 rounded-3xl overflow-hidden cursor-pointer hover:border-purple-500/40 hover:bg-white/[0.05] transition group"
+      className="bg-white/[0.03] border border-white/8 rounded-3xl overflow-hidden cursor-pointer hover:border-brand-500/40 hover:bg-white/[0.05] transition group"
     >
-      <div className="aspect-video bg-black/40 overflow-hidden relative">
+      <div className="aspect-video bg-navy-900/40 overflow-hidden relative">
         <img
           src={product.thumbnailUrl}
           alt={product.title}
@@ -23,7 +23,7 @@ export default function ProductCard({ product, onClick, footer }) {
             Free
           </span>
         ) : (
-          <span className="absolute top-2 right-2 text-xs px-2.5 py-1 rounded-full bg-black/70 border border-white/10 text-white font-bold">
+          <span className="absolute top-2 right-2 text-xs px-2.5 py-1 rounded-full bg-navy-900/70 border border-white/10 text-white font-bold">
             ₹{product.price}
           </span>
         )}
@@ -36,7 +36,7 @@ export default function ProductCard({ product, onClick, footer }) {
         {seller && (
           <div className="flex items-center gap-2 mt-3">
             <img
-              src={seller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.fullName || "U")}&background=7c3aed&color=fff`}
+              src={seller.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.fullName || "U")}&background=5b54a4&color=fff`}
               alt={seller.fullName}
               className="w-5 h-5 rounded-full object-cover"
             />

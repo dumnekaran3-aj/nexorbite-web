@@ -7,7 +7,7 @@ import { getSocket } from "../lib/socket";
 
 const BellIcon = ({ hasUnread }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}
-    className={`w-5 h-5 ${hasUnread ? "text-purple-400" : "text-gray-400"}`}>
+    className={`w-5 h-5 ${hasUnread ? "text-brand-400" : "text-gray-400"}`}>
     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
   </svg>
@@ -32,7 +32,7 @@ function NotifItem({ notif, onRead, onNavigate }) {
       type="button"
       onClick={() => { onRead(notif._id); onNavigate(notif.url || "/"); }}
       className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition text-left ${
-        !notif.isRead ? "bg-purple-500/5 border-l-2 border-purple-500" : "border-l-2 border-transparent"
+        !notif.isRead ? "bg-brand-500/5 border-l-2 border-brand-500" : "border-l-2 border-transparent"
       }`}
     >
       {/* Avatar / icon */}
@@ -41,12 +41,12 @@ function NotifItem({ notif, onRead, onNavigate }) {
           <img src={sender.avatar} alt={sender.fullName}
             className="w-9 h-9 rounded-full object-cover"/>
         ) : (
-          <div className="w-9 h-9 rounded-full bg-purple-600/20 flex items-center justify-center text-lg">
+          <div className="w-9 h-9 rounded-full bg-brand-600/20 flex items-center justify-center text-lg">
             {icon}
           </div>
         )}
         {!notif.isRead && (
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-purple-500 rounded-full border border-black"/>
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-500 rounded-full border border-navy-900"/>
         )}
       </div>
 
@@ -56,7 +56,7 @@ function NotifItem({ notif, onRead, onNavigate }) {
           <p className="text-sm font-medium text-white line-clamp-1">{notif.title}</p>
           {/* ✅ NEW: count badge — jab isi conversation ke multiple messages group hue ho */}
           {notif.count > 1 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold flex-shrink-0">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-bold flex-shrink-0">
               {notif.count}
             </span>
           )}
@@ -214,7 +214,7 @@ export default function NotificationBell() {
       >
         <BellIcon hasUnread={unread > 0} />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-purple-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border border-black">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-brand-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border border-navy-900">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
@@ -228,11 +228,11 @@ export default function NotificationBell() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <div>
               <h3 className="font-bold text-sm">Notifications</h3>
-              {unread > 0 && <p className="text-[10px] text-purple-400">{unread} unread</p>}
+              {unread > 0 && <p className="text-[10px] text-brand-400">{unread} unread</p>}
             </div>
             {unread > 0 && (
               <button type="button" onClick={handleReadAll}
-                className="text-[10px] text-purple-400 hover:text-purple-300 font-semibold transition px-2 py-1 rounded-lg hover:bg-purple-500/10">
+                className="text-[10px] text-brand-400 hover:text-brand-300 font-semibold transition px-2 py-1 rounded-lg hover:bg-brand-500/10">
                 Mark all read
               </button>
             )}
@@ -242,7 +242,7 @@ export default function NotificationBell() {
           <div className="max-h-[400px] overflow-y-auto divide-y divide-white/5">
             {loading && notifs.length === 0 && (
               <div className="flex justify-center py-8">
-                <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"/>
+                <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/>
               </div>
             )}
 
@@ -259,7 +259,7 @@ export default function NotificationBell() {
 
             {hasMore && notifs.length > 0 && (
               <button type="button" onClick={loadMore} disabled={loading}
-                className="w-full py-3 text-xs text-purple-400 hover:text-purple-300 hover:bg-white/5 transition font-semibold">
+                className="w-full py-3 text-xs text-brand-400 hover:text-brand-300 hover:bg-white/5 transition font-semibold">
                 {loading ? "Loading..." : "Load more"}
               </button>
             )}

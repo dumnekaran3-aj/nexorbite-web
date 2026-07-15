@@ -1,10 +1,10 @@
 export default function Footer() {
   return (
-    <footer className="bg-black border-t border-white/10 text-gray-500 text-sm">
+    <footer className="bg-navy-900 border-t border-white/10 text-gray-500 text-sm">
       <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
         
         <div className="text-white font-bold text-xl">
-       Nex<span className="text-purple-500">Orbite</span>
+       Nex<span className="text-brand-500">Orbite</span>
           <p className="text-gray-500 text-xs font-normal mt-1">Campus Ecosystem & Skill Marketplace</p>
         </div>
 
