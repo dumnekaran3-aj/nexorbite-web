@@ -147,7 +147,7 @@ export default function Notifications() {
           {fetched && !loading && notifs.length === 0 && (
             <div className="text-center py-16">
               <p className="text-3xl mb-3">🔔</p>
-              <p className="text-gray-500 text-sm">Koi notification nahi abhi</p>
+              <p className="text-gray-500 text-sm">you don't have any notifications</p>
             </div>
           )}
 

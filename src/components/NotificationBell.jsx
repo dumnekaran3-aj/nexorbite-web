@@ -249,7 +249,7 @@ export default function NotificationBell() {
             {!loading && notifs.length === 0 && (
               <div className="text-center py-10">
                 <p className="text-2xl mb-2">🔔</p>
-                <p className="text-gray-500 text-sm">Koi notification nahi abhi</p>
+                <p className="text-gray-500 text-sm">you don't have any notifications</p>
               </div>
             )}
 

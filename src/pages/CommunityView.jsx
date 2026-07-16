@@ -150,7 +150,7 @@ function VoiceRecorder({ onSend, onCancel, disabled }) {
       mr.start(); recorderRef.current = mr;
       setRecording(true); setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } catch { alert("Microphone access nahi mila."); }
+    } catch { alert("did not found microphone."); }
   };
   const stopRec = () => { recorderRef.current?.stop(); setRecording(false); clearInterval(timerRef.current); };
   const cleanup = () => { if (blobUrl) URL.revokeObjectURL(blobUrl); setBlobUrl(null); setBlob(null); setSeconds(0); setRecording(false); };
@@ -167,7 +167,7 @@ function VoiceRecorder({ onSend, onCancel, disabled }) {
           <div className="flex-1">
             {recording
               ? <div className="flex items-center gap-2"><span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/><span className="text-sm font-mono text-red-400">{fmtSecs(seconds)}</span></div>
-              : <p className="text-sm text-gray-400">Mic press karo record karne ke liye</p>}
+              : <p className="text-sm text-gray-400">press mic to record your audio</p>}
           </div>
           <button type="button" onClick={() => { cleanup(); onCancel(); }} className="text-gray-500 hover:text-white flex-shrink-0">{Icon.x}</button>
         </>
@@ -1107,9 +1107,9 @@ export default function CommunityView() {
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className={activeTab==="members"?"":"hidden"}><div className="space-y-2">{members.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No members found.</p>}{members.map((m)=><MemberCard key={m._id} member={m} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest} onChat={setChatTarget} onProfile={setProfileUser}/>)}</div></div>
         <div className={activeTab==="suggestions"?"":"hidden"}><SuggestionsTab navigate={navigate} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest}/></div>
-        <div className={activeTab==="friends"?"":"hidden"}><div className="space-y-2">{friends.length===0&&<p className="text-center py-16 text-gray-500 text-sm">No friends yet. Members se connect karo!</p>}{friends.map((f)=><FriendRow key={f._id} friend={f} onChat={setChatTarget} navigate={navigate}/>)}</div></div>
-        <div className={activeTab==="incoming"?"":"hidden"}><div className="space-y-2">{incoming.length===0&&<p className="text-center py-16 text-gray-600 text-sm">Koi incoming request nahi.</p>}{incoming.map((r)=><RequestCard key={r._id} request={r} type="incoming" onAccept={acceptRequest} onDecline={declineRequest} navigate={navigate}/>)}</div></div>
-        <div className={activeTab==="outgoing"?"":"hidden"}><div className="space-y-2">{outgoing.length===0&&<p className="text-center py-16 text-gray-600 text-sm">Koi pending request nahi.</p>}{outgoing.map((r)=><RequestCard key={r._id} request={r} type="outgoing" navigate={navigate}/>)}</div></div>
+        <div className={activeTab==="friends"?"":"hidden"}><div className="space-y-2">{friends.length===0&&<p className="text-center py-16 text-gray-500 text-sm">No friends yet. please connect with some members!</p>}{friends.map((f)=><FriendRow key={f._id} friend={f} onChat={setChatTarget} navigate={navigate}/>)}</div></div>
+        <div className={activeTab==="incoming"?"":"hidden"}><div className="space-y-2">{incoming.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No incoming requests.</p>}{incoming.map((r)=><RequestCard key={r._id} request={r} type="incoming" onAccept={acceptRequest} onDecline={declineRequest} navigate={navigate}/>)}</div></div>
+        <div className={activeTab==="outgoing"?"":"hidden"}><div className="space-y-2">{outgoing.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No pending requests.</p>}{outgoing.map((r)=><RequestCard key={r._id} request={r} type="outgoing" navigate={navigate}/>)}</div></div>
         <div className={activeTab==="feed"?"":"hidden"}><FeedTab navigate={navigate}/></div>
       </div>
 

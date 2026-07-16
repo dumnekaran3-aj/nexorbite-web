@@ -2,7 +2,7 @@
 // Yeh file /public folder mein jaayegi (Vite automatically serve karta hai)
 // IMPORTANT: /public/sw.js → browser mein /sw.js pe accessible hoga
 
-const CACHE_NAME = "nexorbite-v1";
+const CACHE_NAME = "nexorbite-v2";
 
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener("install", (e) => {
@@ -14,7 +14,13 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(clients.claim());
 });
 
-// ── Push event — background mein notification show karo ──────────────────────
+// ── Push event — background/foreground dono mein OS notification show karo ───
+// WhatsApp/Telegram pattern follow karte hain:
+//   - "icon"  (large icon)   → sender ka avatar agar hai, warna app logo
+//   - "badge" (status bar)   → HAMESHA app ka apna monochrome mark
+//     (Android is icon ko tint karke status bar mein dikhata hai — isse
+//     user ko turant pata chalta hai "ye NexOrbite ka notification hai",
+//     exactly jaise WhatsApp ka chhota icon clock ke paas dikhta hai)
 self.addEventListener("push", (e) => {
   if (!e.data) return;
 
@@ -25,21 +31,23 @@ self.addEventListener("push", (e) => {
     data = { title: "NexOrbite", body: e.data.text(), url: "/" };
   }
 
-  const { title, body, icon, badge, url, tag } = data;
+  const { title, body, icon, image, url, tag } = data;
 
   const options = {
-    body:    body    || "Get Something New!",
-    icon:    icon    || "/icons/icon-192x192.png",
-    badge:   badge   || "/icons/badge-72x72.png",
-    tag:     tag     || "nexorbite",
-    data:    { url:  url || "/" },
+    body:    body  || "Get Something New!",
+    icon:    icon  || "/icons/icon-192x192.png",
+    badge:   "/icons/badge-72x72.png",   // app mark hamesha fixed — server override ignore
+    image:   image || undefined,          // optional bada banner (e.g. shared post/photo)
+    tag:     tag   || "nexorbite",
+    data:    { url: url || "/" },
     vibrate: [100, 50, 100],
     actions: [
-      { action: "open", title: "Open" },
+      { action: "open",    title: "Open" },
       { action: "dismiss", title: "Dismiss" },
     ],
-    renotify:    true,
-    requireInteraction: false,
+    renotify:           true,   // same tag ho tab bhi phir se alert/vibrate kare
+    requireInteraction: false,  // WhatsApp jaisa — apne aap dismiss ho sakta hai
+    silent:             false,
   };
 
   e.waitUntil(
@@ -72,7 +80,7 @@ self.addEventListener("notificationclick", (e) => {
   );
 });
 
-// ── Message from app (navigate after focus) ───────────────────────────────────
+// ── Message from app (navigate after focus / force-update SW) ─────────────────
 self.addEventListener("message", (e) => {
   if (e.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
