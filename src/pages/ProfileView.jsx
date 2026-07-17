@@ -3,6 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import MarketplaceQuickLinks from "../components/digitalproducts/MarketplaceQuickLinks";
+import {
+  Pencil, BadgeCheck, Lock, Globe, GraduationCap, School,
+  Copy, Check, Crown, Link2, PlusCircle, ChevronRight,
+  Users, ShoppingBag, ShieldCheck, Eye, X, Sparkles,
+} from "lucide-react";
 
 // ─── Image Modal ──────────────────────────────────────────────────────────────
 function ImageModal({ src, name, onClose }) {
@@ -98,7 +103,7 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
             <h2 className="text-xl font-bold">Create Community</h2>
             <p className="text-xs text-gray-500 mt-0.5">Step {step} of 2</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition text-lg">×</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition"><X size={16} /></button>
         </div>
         <div className="h-0.5 bg-white/5"><div className="h-full bg-brand-600 transition-all" style={{ width: step === 1 ? "50%" : "100%" }} /></div>
         <div className="px-6 py-5 space-y-4">
@@ -134,11 +139,11 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
             </Field>
             <Field label="Community Logo" hint="Optional PNG/JPG">
               <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files[0])} className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer" />
-              {logo && <p className="text-xs text-green-400 mt-1">✓ {logo.name}</p>}
+              {logo && <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><Check size={12} /> {logo.name}</p>}
             </Field>
             <Field label="Banner Image" hint="Optional wide image">
               <input type="file" accept="image/*" onChange={(e) => setBanner(e.target.files[0])} className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer" />
-              {banner && <p className="text-xs text-green-400 mt-1">✓ {banner.name}</p>}
+              {banner && <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><Check size={12} /> {banner.name}</p>}
             </Field>
           </>)}
         </div>
@@ -149,7 +154,7 @@ function CreateCommunityModal({ onClose, onSuccess, showToast }) {
           <button onClick={() => { if (step === 1) { if (validateStep1()) setStep(2); } else handleSubmit(); }}
             disabled={loading}
             className="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2">
-            {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating...</> : step === 1 ? "Next →" : "Create 🚀"}
+            {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Creating...</> : step === 1 ? <>Next <ChevronRight size={15} /></> : <><Sparkles size={15} /> Create</>}
           </button>
         </div>
       </div>
@@ -180,7 +185,7 @@ function JoinCommunityModal({ onClose, onSuccess, showToast }) {
       <div className="bg-[#0d0d0d] border border-white/10 rounded-3xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
           <h2 className="text-xl font-bold">Join a Community</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition text-lg">×</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition"><X size={16} /></button>
         </div>
         <div className="px-6 py-5">
           <p className="text-gray-500 text-sm mb-4">Enter the invite code shared by your community admin.</p>
@@ -195,7 +200,7 @@ function JoinCommunityModal({ onClose, onSuccess, showToast }) {
           <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-white/10 text-gray-400 hover:text-white text-sm font-semibold transition">Cancel</button>
           <button onClick={handleJoin} disabled={loading || !code.trim()}
             className="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-bold transition flex items-center justify-center gap-2">
-            {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Joining...</> : "Join →"}
+            {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Joining...</> : <>Join <ChevronRight size={15} /></>}
           </button>
         </div>
       </div>
@@ -216,7 +221,7 @@ function FriendsModal({ friends, loading, onClose, onEnlarge, navigate }) {
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8 flex-shrink-0">
           <h2 className="text-lg font-bold">Friends {friends.length > 0 && <span className="text-gray-500 font-normal">({friends.length})</span>}</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition text-lg">×</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition"><X size={16} /></button>
         </div>
         <div className="overflow-y-auto px-3 py-2">
           {loading ? (
@@ -240,7 +245,7 @@ function FriendsModal({ friends, loading, onClose, onEnlarge, navigate }) {
                     <p className="text-sm font-semibold truncate">{f.fullName || f.username}</p>
                     <p className="text-xs text-gray-500 truncate">@{f.username}{f.stream ? ` · 🎓 ${f.stream}` : ""}</p>
                   </button>
-                  <span className="text-gray-600 text-sm flex-shrink-0">→</span>
+                  <span className="text-gray-600 flex-shrink-0"><ChevronRight size={16} /></span>
                 </div>
               ))}
             </div>
@@ -281,9 +286,9 @@ function StatItem({ icon, value, label, onClick }) {
   return (
     <Comp
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-2xl transition ${onClick ? "hover:bg-white/[0.06] active:scale-95 cursor-pointer" : ""}`}
+      className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl transition ${onClick ? "hover:bg-white/[0.06] active:scale-95 cursor-pointer" : ""}`}
     >
-      <span className="text-base leading-none">{icon}</span>
+      <span className="text-brand-400">{icon}</span>
       <span className="text-sm font-bold leading-none">{value}</span>
       <span className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold">{label}</span>
     </Comp>
@@ -292,7 +297,7 @@ function StatItem({ icon, value, label, onClick }) {
 
 // ─── MAIN PROFILE VIEW ────────────────────────────────────────────────────────
 export default function ProfileView() {
-  const { user, collegeStatus, refreshCollegeStatus, loading: authLoading } = useContext(AuthContext);
+  const { user, collegeStatus, refreshCollegeStatus, refreshUser, loading: authLoading } = useContext(AuthContext);
 
   const navigate = useNavigate();
 
@@ -314,6 +319,19 @@ export default function ProfileView() {
   };
 
   const isJoined = collegeStatus?.isJoined === true;
+
+  // FIX: user.salesCount / trustScore / uniqueImpressionsCount / friendsCount
+  // change over time from OTHER people's actions (someone buys your product,
+  // views it, accepts your friend request). AuthContext fetches the user
+  // only once on app load, so this page could keep showing numbers from
+  // whenever you last logged in. Silently refetch on every visit.
+  useEffect(() => {
+    if (typeof refreshUser === "function") {
+      refreshUser();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   // Community membership required by /api/ecosystem/friends (verifyCollegeMember) —
   // only fetch once we know the user is actually in a community, warna backend
@@ -403,7 +421,7 @@ export default function ProfileView() {
                 />
               </button>
               <Link to="/profile-setup" className="mb-1 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-white/10 text-gray-400 hover:text-white hover:border-white/20 text-xs font-semibold transition flex-shrink-0">
-                ✏️ Edit
+                <Pencil size={12} /> Edit
               </Link>
             </div>
 
@@ -412,13 +430,13 @@ export default function ProfileView() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="text-xl font-bold leading-tight">{user.fullName || user.username}</h2>
                 {user.isVerified && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-semibold">✓ Verified</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-semibold"><BadgeCheck size={11} /> Verified</span>
                 )}
                 {role && <RoleBadge role={role} />}
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${
+                <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-semibold ${
                   user.isPrivate ? "bg-white/5 border-white/10 text-gray-400" : "bg-green-500/10 border-green-500/25 text-green-400"
                 }`}>
-                  {user.isPrivate ? "🔒 Private" : "🌐 Public"}
+                  {user.isPrivate ? <><Lock size={11} /> Private</> : <><Globe size={11} /> Public</>}
                 </span>
               </div>
               <p className="text-gray-500 text-sm mt-0.5">@{user.username}</p>
@@ -426,23 +444,23 @@ export default function ProfileView() {
               {/* Stream + Community chips */}
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {user.stream && (
-                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300">🎓 {user.stream}</span>
+                  <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300"><GraduationCap size={12} /> {user.stream}</span>
                 )}
                 {isJoined && (
                   <button
                     onClick={() => navigate(`/community/${collegeStatus.collegeId}`)}
-                    className="text-[11px] px-2.5 py-1 rounded-full bg-brand-600/15 border border-brand-500/30 text-brand-300 hover:bg-brand-600/25 transition font-semibold truncate max-w-[220px]"
+                    className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-brand-600/15 border border-brand-500/30 text-brand-300 hover:bg-brand-600/25 transition font-semibold truncate max-w-[220px]"
                     title={collegeStatus.collegeName}
                   >
-                    🏫 {collegeStatus.collegeName}
+                    <School size={12} className="flex-shrink-0" /> {collegeStatus.collegeName}
                   </button>
                 )}
                 {isOwner && collegeStatus?.inviteCode && (
                   <button
                     onClick={copyCode}
-                    className={`text-[11px] px-2.5 py-1 rounded-full border font-mono transition ${copied ? "bg-green-600/20 border-green-500/40 text-green-300" : "bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"}`}
+                    className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border font-mono transition ${copied ? "bg-green-600/20 border-green-500/40 text-green-300" : "bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"}`}
                   >
-                    {copied ? "✓ Copied!" : `📋 ${collegeStatus.inviteCode}`}
+                    {copied ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> {collegeStatus.inviteCode}</>}
                   </button>
                 )}
               </div>
@@ -455,10 +473,10 @@ export default function ProfileView() {
 
             {/* Stats row */}
             <div className="grid grid-cols-4 gap-1 mt-4 pt-4 border-t border-white/8">
-              <StatItem icon="" value={friends.length} label="Friends" onClick={() => setShowFriends(true)} />
-              <StatItem icon="" value={user.salesCount ?? 0} label="Sales" />
-              <StatItem icon="" value={user.trustScore ?? 0} label="Trust" />
-              <StatItem icon="" value={user.uniqueImpressionsCount ?? 0} label="Views" />
+<StatItem icon={<Users size={16} />} value={user.friendsCount ?? friends.length} label="Collaborators" onClick={() => setShowFriends(true)} />
+              <StatItem icon={<ShoppingBag size={16} />} value={user.salesCount ?? 0} label="Sales" />
+              <StatItem icon={<ShieldCheck size={16} />} value={user.trustScore ?? 0} label="Trust" />
+              <StatItem icon={<Eye size={16} />} value={user.uniqueImpressionsCount ?? 0} label="Impressions" />
             </div>
           </div>
         </div>
@@ -469,14 +487,14 @@ export default function ProfileView() {
             onClick={() => navigate("/admin")}
             className="w-full py-3 rounded-2xl bg-gradient-to-r from-yellow-600/15 to-orange-600/15 border border-yellow-500/30 hover:border-yellow-500/50 hover:from-yellow-600/25 hover:to-orange-600/25 transition text-yellow-300 font-bold text-sm flex items-center justify-center gap-2 group"
           >
-            <span className="text-base"></span>
+            <Crown size={18} />
             Admin Panel
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ml-1 ${
               isOwner ? "bg-yellow-500/20 text-yellow-400" : "bg-blue-500/20 text-blue-400"
             }`}>
               {isOwner ? "Owner" : "Principal"}
             </span>
-            <span className="ml-auto text-yellow-600 group-hover:translate-x-1 transition">→</span>
+            <span className="ml-auto text-yellow-600 group-hover:translate-x-1 transition"><ChevronRight size={16} /></span>
           </button>
         )}
 
@@ -487,18 +505,18 @@ export default function ProfileView() {
         {!isJoined && (
           <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-6">
             <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-brand-600/10 border border-brand-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🏫</div>
+              <div className="w-14 h-14 bg-brand-600/10 border border-brand-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 text-brand-400"><School size={26} /></div>
               <h3 className="font-bold text-lg">Join Your College Community</h3>
               <p className="text-gray-500 text-sm mt-1">Connect with classmates, share resources, and collaborate.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setShowJoin(true)}
                 className="py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm transition flex items-center justify-center gap-1.5">
-                🔗 Join Community
+                <Link2 size={15} /> Join Community
               </button>
               <button onClick={() => setShowCreate(true)}
                 className="py-3.5 rounded-2xl border border-white/10 hover:bg-white/5 hover:border-white/20 text-gray-300 hover:text-white font-bold text-sm transition flex items-center justify-center gap-1.5">
-                ✨ Create Community
+                <PlusCircle size={15} /> Create Community
               </button>
             </div>
             <p className="text-center text-gray-600 text-xs mt-3">Have a code? Join. Starting fresh? Create one.</p>
