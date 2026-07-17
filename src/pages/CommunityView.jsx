@@ -13,10 +13,11 @@ import {
   useEffect, useState, useRef, useCallback,
   useContext, useMemo
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import { getSocket } from "../lib/socket";
+import { leaveCommunity } from "../lib/community.api";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const Icon = {
@@ -70,7 +71,7 @@ const RoleBadge = ({ role }) => {
 // ─── ImageModal ───────────────────────────────────────────────────────────────
 function ImageModal({ src, name, onClose }) {
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-navy-900/90 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-navy-950/90 backdrop-blur-sm" onClick={onClose}>
       <img src={src} alt={name} className="max-w-[90vw] max-h-[90vh] rounded-2xl object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
     </div>
   );
@@ -150,7 +151,7 @@ function VoiceRecorder({ onSend, onCancel, disabled }) {
       mr.start(); recorderRef.current = mr;
       setRecording(true); setSeconds(0);
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } catch { alert("did not found microphone."); }
+    } catch { alert("Microphone access nahi mila."); }
   };
   const stopRec = () => { recorderRef.current?.stop(); setRecording(false); clearInterval(timerRef.current); };
   const cleanup = () => { if (blobUrl) URL.revokeObjectURL(blobUrl); setBlobUrl(null); setBlob(null); setSeconds(0); setRecording(false); };
@@ -167,7 +168,7 @@ function VoiceRecorder({ onSend, onCancel, disabled }) {
           <div className="flex-1">
             {recording
               ? <div className="flex items-center gap-2"><span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/><span className="text-sm font-mono text-red-400">{fmtSecs(seconds)}</span></div>
-              : <p className="text-sm text-gray-400">press mic to record your audio</p>}
+              : <p className="text-sm text-gray-400">Mic press karo record karne ke liye</p>}
           </div>
           <button type="button" onClick={() => { cleanup(); onCancel(); }} className="text-gray-500 hover:text-white flex-shrink-0">{Icon.x}</button>
         </>
@@ -358,7 +359,7 @@ function MediaGallery({ chatId, friend, onClose, onImageClick }) {
   const files  = media.filter((m) => m.mediaType === "file");
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-900/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-950/80 backdrop-blur-sm">
       <div className="bg-[#111] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md h-[80vh] flex flex-col overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 flex-shrink-0">
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">{Icon.back}</button>
@@ -684,7 +685,7 @@ function ChatPanel({ friend, myId, onClose }) {
   };
 
   if (!friendId) return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/70">
       <div className="bg-[#111] border border-white/10 rounded-3xl p-8 text-center">
         <p className="text-red-400 mb-4">Friend data missing.</p>
         <button type="button" onClick={onClose} className="px-4 py-2 bg-white/10 rounded-full text-sm">Close</button>
@@ -698,14 +699,14 @@ function ChatPanel({ friend, myId, onClose }) {
       {/* FIX #4: MediaGallery */}
       {showGallery && <MediaGallery chatId={chatIdRef.current} friend={friend} onClose={() => setShowGallery(false)} onImageClick={(src) => { setShowGallery(false); setViewImg(src); }} />}
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-900/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-950/70 backdrop-blur-sm">
         <div className="bg-[#0f0f0f] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md h-[90vh] sm:h-[640px] flex flex-col overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414] flex-shrink-0">
             <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-white transition">{Icon.back}</button>
             <div className="relative flex-shrink-0">
-              <img src={friend.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=5b54a4&color=fff&bold=true`} alt={friend.fullName} className="w-9 h-9 rounded-full object-cover" />
+              <img src={friend.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=7c3aed&color=fff&bold=true`} alt={friend.fullName} className="w-9 h-9 rounded-full object-cover" />
               {friendOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#141414]" />}
             </div>
             {/* FIX #4: name pe click se gallery khulegi */}
@@ -824,15 +825,28 @@ function ChatPanel({ friend, myId, onClose }) {
 }
 
 // ─── FeedTab ──────────────────────────────────────────────────────────────────
-function FeedTab({ navigate }) {
+function FeedTab({ navigate, collegeQS }) {
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
-  const hasFetched = useRef(false);
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    (async () => { try { const r = await api.get("/api/ecosystem/feed/get-feed"); setItems(r.data.posts || r.data.feedItems || []); } catch {} finally { setLoading(false); } })();
-  }, []);
+    // MULTI-COMMUNITY FIX (Day 2): collegeQS now comes in as a prop (this
+    // component doesn't have access to the parent's variables), and the
+    // effect re-runs whenever it changes so switching communities actually
+    // refetches instead of showing stale/cached data from the last one.
+    setLoading(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get(`/api/ecosystem/feed/get-feed${collegeQS}`);
+        if (!cancelled) setItems(r.data.posts || r.data.feedItems || []);
+      } catch {
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [collegeQS]);
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
   if (!items.length) return <div className="text-center py-16"><div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">{Icon.shop}</div><p className="text-gray-500 text-sm">No products in feed yet.</p></div>;
   return (
@@ -852,7 +866,7 @@ function FeedTab({ navigate }) {
               </div>
               {item.seller && (
                 <button type="button" onClick={() => navigate(`/profile/${item.seller._id}`)} className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 w-full text-left hover:opacity-80 transition">
-                  <img src={item.seller.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(item.seller.fullName||"U")}&background=5b54a4&color=fff`} alt={item.seller.fullName} className="w-6 h-6 rounded-full object-cover"/>
+                  <img src={item.seller.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(item.seller.fullName||"U")}&background=7c3aed&color=fff`} alt={item.seller.fullName} className="w-6 h-6 rounded-full object-cover"/>
                   <span className="text-xs text-gray-500">{item.seller.fullName}</span>
                 </button>
               )}
@@ -865,15 +879,26 @@ function FeedTab({ navigate }) {
 }
 
 // ─── SuggestionsTab ───────────────────────────────────────────────────────────
-function SuggestionsTab({ navigate, sentIds, friendIds, onConnect }) {
+function SuggestionsTab({ navigate, sentIds, friendIds, onConnect, collegeQS }) {
   const [users, setUsers]     = useState([]);
   const [loading, setLoading] = useState(true);
-  const hasFetched = useRef(false);
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    (async () => { try { const res = await api.get("/api/ecosystem/members/same-branch"); setUsers(res.data.students||[]); } catch { setUsers([]); } finally { setLoading(false); } })();
-  }, []);
+    // MULTI-COMMUNITY FIX (Day 2): same fix as FeedTab — collegeQS as a
+    // prop, refetch on change instead of a one-time hasFetched guard.
+    setLoading(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get(`/api/ecosystem/members/same-branch${collegeQS}`);
+        if (!cancelled) setUsers(res.data.students || []);
+      } catch {
+        if (!cancelled) setUsers([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [collegeQS]);
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
   if (!users.length) return <p className="text-center text-gray-500 py-16 text-sm">No suggestions.</p>;
   return (
@@ -882,13 +907,13 @@ function SuggestionsTab({ navigate, sentIds, friendIds, onConnect }) {
         const uid = String(u._id); const isFriend = friendIds.has(uid); const isSent = sentIds.has(uid);
         return (
           <div key={u._id} className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 transition">
-            <button type="button" onClick={() => navigate(`/profile/${u._id}`)}><img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=5b54a4&color=fff`} alt={u.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+            <button type="button" onClick={() => navigate(`/profile/${u._id}`)}><img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=7c3aed&color=fff`} alt={u.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${u._id}`)}>
               <p className="font-semibold text-sm truncate">{u.fullName}</p>
               <p className="text-xs text-gray-500 truncate">@{u.username} · {u.stream||"—"}</p>
               <RoleBadge role={u.collegeRole}/>
             </div>
-            {!isFriend && <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-gray-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"+ Connect"}</button>}
+            {!isFriend && <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-navy-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"+ Connect"}</button>}
           </div>
         );
       })}
@@ -901,7 +926,7 @@ function MemberCard({ member, sentIds, onConnect, onChat, onProfile, friendIds }
   const uid = String(member._id); const isFriend = friendIds.has(uid); const isSent = sentIds.has(uid);
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 transition">
-      <button type="button" onClick={() => onProfile(member)} className="flex-shrink-0"><img src={member.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName||"U")}&background=5b54a4&color=fff`} alt={member.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+      <button type="button" onClick={() => onProfile(member)} className="flex-shrink-0"><img src={member.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName||"U")}&background=7c3aed&color=fff`} alt={member.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onProfile(member)}>
         <p className="font-semibold text-sm truncate hover:text-brand-300">{member.fullName}</p>
         <p className="text-xs text-gray-500 truncate">@{member.username} · {member.stream||"—"}</p>
@@ -910,7 +935,7 @@ function MemberCard({ member, sentIds, onConnect, onChat, onProfile, friendIds }
       <div className="flex gap-2 flex-shrink-0">
         {isFriend
           ? <button type="button" onClick={() => onChat(member)} className="px-3 py-1.5 bg-brand-600/20 text-brand-400 border border-brand-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-brand-600/40 transition">{Icon.chat} Chat</button>
-          : <button type="button" onClick={() => onConnect(member._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-gray-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"Connect"}</button>}
+          : <button type="button" onClick={() => onConnect(member._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-navy-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"Connect"}</button>}
       </div>
     </div>
   );
@@ -922,7 +947,7 @@ function RequestCard({ request, type, onAccept, onDecline, navigate }) {
   if (!person?._id) return null;
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-4 py-3">
-      <button type="button" onClick={() => navigate(`/profile/${person._id}`)}><img src={person.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(person.fullName||"U")}&background=5b54a4&color=fff`} alt={person.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+      <button type="button" onClick={() => navigate(`/profile/${person._id}`)}><img src={person.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(person.fullName||"U")}&background=7c3aed&color=fff`} alt={person.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${person._id}`)}>
         <p className="font-semibold text-sm truncate">{person.fullName}</p>
         <p className="text-xs text-gray-500">@{person.username}</p>
@@ -940,7 +965,7 @@ function RequestCard({ request, type, onAccept, onDecline, navigate }) {
 function FriendRow({ friend, onChat, navigate }) {
   return (
     <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-4 py-3">
-      <button type="button" onClick={() => navigate(`/profile/${friend._id}`)}><img src={friend.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=5b54a4&color=fff`} alt={friend.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
+      <button type="button" onClick={() => navigate(`/profile/${friend._id}`)}><img src={friend.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=7c3aed&color=fff`} alt={friend.fullName} className="w-10 h-10 rounded-full object-cover"/></button>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${friend._id}`)}>
         <p className="font-semibold text-sm truncate">{friend.fullName}</p>
         <p className="text-xs text-gray-500 truncate">@{friend.username}</p>
@@ -955,12 +980,12 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
   if (!u?._id) return null;
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm" onClick={onClose}>
         <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative" onClick={(e) => e.stopPropagation()}>
           <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white">{Icon.x}</button>
           <div className="flex flex-col items-center text-center">
             <button type="button" onClick={() => setEnlargeAvatar(true)} className="cursor-zoom-in hover:scale-105 transition">
-              <img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=5b54a4&color=fff&bold=true`} alt={u.fullName} className="w-20 h-20 rounded-full object-cover border-2 border-brand-500"/>
+              <img src={u.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName||"U")}&background=7c3aed&color=fff&bold=true`} alt={u.fullName} className="w-20 h-20 rounded-full object-cover border-2 border-brand-500"/>
             </button>
             <h3 className="text-xl font-bold mt-3">{u.fullName}</h3>
             <p className="text-gray-500 text-sm">@{u.username}</p>
@@ -970,7 +995,7 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
           <div className="flex gap-3 mt-6">
             {isFriend
               ? <button type="button" onClick={() => { onClose(); onChat(u); }} className="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition">{Icon.chat} Message</button>
-              : <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${isSent?"bg-gray-700 text-gray-400 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Request Sent":"Connect"}</button>}
+              : <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${isSent?"bg-navy-700 text-gray-400 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Request Sent":"Connect"}</button>}
             <button type="button" onClick={() => { onClose(); onNavigate(`/profile/${u._id}`); }} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition border border-white/10">View Profile</button>
           </div>
         </div>
@@ -984,7 +1009,18 @@ function ProfileModal({ user: u, onClose, onChat, isFriend, isSent, onConnect, o
 export default function CommunityView() {
   const { user, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { id: routeCollegeId } = useParams();
   const myId     = user?._id || user?.id;
+
+  // MULTI-COMMUNITY FIX (Day 2): every API call in this page must be scoped
+  // to the community actually being viewed (the :id in the URL), not
+  // whatever the backend's private-community fallback resolves to.
+  // /community (no :id) still falls back to the user's private community —
+  // same as before — but /community/<publicId> now correctly asks for that
+  // specific community's data via ?collegeId=.
+  const collegeQS = routeCollegeId ? `?collegeId=${routeCollegeId}` : "";
+  const withCollegeId = (params = {}) =>
+    routeCollegeId ? { ...params, collegeId: routeCollegeId } : params;
 
   const [college, setCollege]               = useState(null);
   const [members, setMembers]               = useState([]);
@@ -1000,6 +1036,8 @@ export default function CommunityView() {
   const [showInfo, setShowInfo]             = useState(false);
   const [toast, setToast]                   = useState(null);
   const [hasFetched, setHasFetched]         = useState(false);
+  const [myRole, setMyRole]                 = useState(null);
+  const [leaving, setLeaving]               = useState(false);
 
   const friendIds = useMemo(() => new Set(friends.map((f) => String(f._id))), [friends]);
 
@@ -1008,26 +1046,43 @@ export default function CommunityView() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  // MULTI-COMMUNITY FIX (Day 2): the old `hasFetched` boolean made this run
+  // ONCE per component lifetime — since React Router reuses the same
+  // CommunityView instance across /community/:id -> /community/:id2, moving
+  // between two communities never refetched and kept showing whichever
+  // community loaded first. Now it refetches whenever routeCollegeId changes.
   const fetchAll = useCallback(async () => {
-    if (!myId || hasFetched) return;
+    if (!myId) return;
     setLoading(true); setHasFetched(true);
     try {
       const [colRes, memRes, friRes, incRes, outRes] = await Promise.allSettled([
-        api.get("/api/createcollege/my-college"),
-        api.get("/api/ecosystem/members"),
-        api.get("/api/ecosystem/friends/"),
-        api.get("/api/ecosystem/friends/requests/incoming"),
-        api.get("/api/ecosystem/friends/requests/outgoing"),
+        api.get(`/api/createcollege/my-college${collegeQS}`),
+        api.get(`/api/ecosystem/members${collegeQS}`),
+        api.get(`/api/ecosystem/friends/${collegeQS}`),
+        api.get(`/api/ecosystem/friends/requests/incoming${collegeQS}`),
+        api.get(`/api/ecosystem/friends/requests/outgoing${collegeQS}`),
       ]);
-      if (colRes.status === "fulfilled") setCollege(colRes.value.data?.college || null);
-      if (memRes.status === "fulfilled") setMembers(memRes.value.data?.members || []);
-      if (friRes.status === "fulfilled") setFriends(friRes.value.data?.friends || []);
-      if (incRes.status === "fulfilled") setIncoming(incRes.value.data?.requests || []);
-      if (outRes.status === "fulfilled") setOutgoing(outRes.value.data?.requests || []);
+      if (colRes.status === "fulfilled") {
+        setCollege(colRes.value.data?.college || null);
+        setMyRole(colRes.value.data?.myRole || null);
+      } else {
+        setCollege(null);
+        setMyRole(null);
+      }
+      if (memRes.status === "fulfilled") setMembers(memRes.value.data?.members || []); else setMembers([]);
+      if (friRes.status === "fulfilled") setFriends(friRes.value.data?.friends || []); else setFriends([]);
+      if (incRes.status === "fulfilled") setIncoming(incRes.value.data?.requests || []); else setIncoming([]);
+      if (outRes.status === "fulfilled") setOutgoing(outRes.value.data?.requests || []); else setOutgoing([]);
     } finally { setLoading(false); }
-  }, [myId, hasFetched]);
+  }, [myId, collegeQS]);
 
-  useEffect(() => { if (!authLoading && myId) fetchAll(); }, [authLoading, myId, fetchAll]);
+  useEffect(() => {
+    // Reset so the "community not found" empty-state doesn't flash stale
+    // data from the previous community while the new one is loading.
+    setHasFetched(false);
+    if (!authLoading && myId) fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, myId, routeCollegeId]);
 
   useEffect(() => {
     if (!myId) return;
@@ -1037,8 +1092,28 @@ export default function CommunityView() {
     return () => socket.off("new_friend_request", onNewReq);
   }, [myId, showToast]);
 
+  // MULTI-COMMUNITY (Day 1): self-exit for this community. Owners cannot
+  // leave their own community (backend also enforces this with a 403 —
+  // hiding the button for owners is just a clearer UX signal).
+  const handleLeaveCommunity = async () => {
+    if (!college?._id || leaving) return;
+    if (!window.confirm(`Leave "${college.college_name}"? You can rejoin later with an invite code.`)) return;
+    setLeaving(true);
+    try {
+      const res = await leaveCommunity(college._id);
+      if (res.success) {
+        showToast("Left community");
+        navigate("/");
+      } else {
+        showToast(res.msg || "Could not leave community", "error");
+      }
+    } finally {
+      setLeaving(false);
+    }
+  };
+
   const sendRequest = async (userId) => {
-    try { await api.post("/api/ecosystem/friends/request", { to: userId }); setSentIds((prev) => new Set([...prev, String(userId)])); showToast("Request sent!"); }
+    try { await api.post("/api/ecosystem/friends/request", withCollegeId({ to: userId })); setSentIds((prev) => new Set([...prev, String(userId)])); showToast("Request sent!"); }
     catch (e) { showToast(e?.response?.data?.msg || "cant send request", "error"); }
   };
 
@@ -1061,14 +1136,14 @@ export default function CommunityView() {
     { key:"feed",        label:"Feed",     icon:Icon.feed,    count:null },
   ];
 
-  if (authLoading) return <div className="min-h-screen bg-navy-900 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
-  if (!myId) return <div className="min-h-screen bg-navy-900 flex items-center justify-center px-4"><div className="text-center"><p className="text-gray-400 mb-4">Login for community access</p><button type="button" onClick={() => navigate("/login")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button></div></div>;
-  if (loading) return <div className="min-h-screen bg-navy-900 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
-  if (!college && hasFetched) return <div className="min-h-screen bg-navy-900 flex items-center justify-center px-4"><div className="text-center max-w-sm"><div className="w-16 h-16 bg-brand-600/10 border border-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-500">{Icon.users}</div><h2 className="text-2xl font-bold mb-2">community not found</h2><p className="text-gray-500 text-sm mb-6">Invite code se college join karo.</p><button type="button" onClick={() => navigate("/")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Go Home</button></div></div>;
-  if (!college) return <div className="min-h-screen bg-navy-900 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (authLoading) return <div className="min-h-screen bg-navy-950 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (!myId) return <div className="min-h-screen bg-navy-950 flex items-center justify-center px-4"><div className="text-center"><p className="text-gray-400 mb-4">Login for community access</p><button type="button" onClick={() => navigate("/login")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Login</button></div></div>;
+  if (loading) return <div className="min-h-screen bg-navy-950 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
+  if (!college && hasFetched) return <div className="min-h-screen bg-navy-950 flex items-center justify-center px-4"><div className="text-center max-w-sm"><div className="w-16 h-16 bg-brand-600/10 border border-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-500">{Icon.users}</div><h2 className="text-2xl font-bold mb-2">community not found</h2><p className="text-gray-500 text-sm mb-6">Invite code se college join karo.</p><button type="button" onClick={() => navigate("/")} className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition">Go Home</button></div></div>;
+  if (!college) return <div className="min-h-screen bg-navy-950 flex items-center justify-center"><div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white">
+    <div className="min-h-screen bg-navy-950 text-white">
       {toast && <div className={`fixed top-4 right-4 z-[200] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg ${toast.type==="error"?"bg-red-600":"bg-green-600"} text-white`}>{toast.msg}</div>}
 
       <div className="bg-gradient-to-b from-brand-900/30 to-transparent pt-24 pb-8 px-4">
@@ -1090,7 +1165,7 @@ export default function CommunityView() {
         </div>
       </div>
 
-      <div className="sticky top-0 z-30 bg-navy-900/90 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-0 z-30 bg-navy-950/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto scrollbar-none py-1">
             {tabs.map((t) => (
@@ -1106,15 +1181,15 @@ export default function CommunityView() {
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className={activeTab==="members"?"":"hidden"}><div className="space-y-2">{members.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No members found.</p>}{members.map((m)=><MemberCard key={m._id} member={m} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest} onChat={setChatTarget} onProfile={setProfileUser}/>)}</div></div>
-        <div className={activeTab==="suggestions"?"":"hidden"}><SuggestionsTab navigate={navigate} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest}/></div>
-        <div className={activeTab==="friends"?"":"hidden"}><div className="space-y-2">{friends.length===0&&<p className="text-center py-16 text-gray-500 text-sm">No friends yet. please connect with some members!</p>}{friends.map((f)=><FriendRow key={f._id} friend={f} onChat={setChatTarget} navigate={navigate}/>)}</div></div>
-        <div className={activeTab==="incoming"?"":"hidden"}><div className="space-y-2">{incoming.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No incoming requests.</p>}{incoming.map((r)=><RequestCard key={r._id} request={r} type="incoming" onAccept={acceptRequest} onDecline={declineRequest} navigate={navigate}/>)}</div></div>
-        <div className={activeTab==="outgoing"?"":"hidden"}><div className="space-y-2">{outgoing.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No pending requests.</p>}{outgoing.map((r)=><RequestCard key={r._id} request={r} type="outgoing" navigate={navigate}/>)}</div></div>
-        <div className={activeTab==="feed"?"":"hidden"}><FeedTab navigate={navigate}/></div>
+        <div className={activeTab==="suggestions"?"":"hidden"}><SuggestionsTab navigate={navigate} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest} collegeQS={collegeQS}/></div>
+        <div className={activeTab==="friends"?"":"hidden"}><div className="space-y-2">{friends.length===0&&<p className="text-center py-16 text-gray-500 text-sm">No friends yet. Members se connect karo!</p>}{friends.map((f)=><FriendRow key={f._id} friend={f} onChat={setChatTarget} navigate={navigate}/>)}</div></div>
+        <div className={activeTab==="incoming"?"":"hidden"}><div className="space-y-2">{incoming.length===0&&<p className="text-center py-16 text-gray-600 text-sm">Koi incoming request nahi.</p>}{incoming.map((r)=><RequestCard key={r._id} request={r} type="incoming" onAccept={acceptRequest} onDecline={declineRequest} navigate={navigate}/>)}</div></div>
+        <div className={activeTab==="outgoing"?"":"hidden"}><div className="space-y-2">{outgoing.length===0&&<p className="text-center py-16 text-gray-600 text-sm">Koi pending request nahi.</p>}{outgoing.map((r)=><RequestCard key={r._id} request={r} type="outgoing" navigate={navigate}/>)}</div></div>
+        <div className={activeTab==="feed"?"":"hidden"}><FeedTab navigate={navigate} collegeQS={collegeQS}/></div>
       </div>
 
       {showInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/70 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm" onClick={() => setShowInfo(false)}>
           <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">Community Info</h3>
             <div className="space-y-3 text-sm">
@@ -1124,7 +1199,21 @@ export default function CommunityView() {
               <div className="flex justify-between"><span className="text-gray-500">Status</span><span className={college.status==="active"?"text-green-400":"text-yellow-400"}>{college.status}</span></div>
               {college.description && <div className="pt-3 border-t border-white/10"><p className="text-gray-500 text-xs mb-1">About</p><p className="text-gray-300 text-sm">{college.description}</p></div>}
             </div>
-            <button type="button" onClick={() => setShowInfo(false)} className="mt-6 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Close</button>
+
+            {/* MULTI-COMMUNITY (Day 1): self-exit — hidden for the owner,
+                since owners must delete/transfer the community instead. */}
+            {myRole !== "owner" && (
+              <button
+                type="button"
+                disabled={leaving}
+                onClick={handleLeaveCommunity}
+                className="mt-4 w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 rounded-xl text-sm font-semibold transition disabled:opacity-50"
+              >
+                {leaving ? "Leaving…" : "Leave Community"}
+              </button>
+            )}
+
+            <button type="button" onClick={() => setShowInfo(false)} className="mt-3 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Close</button>
           </div>
         </div>
       )}
