@@ -48,7 +48,10 @@ export const useRazorpay = () => {
             name:  userInfo.userName  || "",
             email: userInfo.userEmail || "",
           },
-          theme: { color: "#7c3aed" },
+          // FIX: pehle ek generic violet (#7c3aed) hardcoded tha jo project ke
+          // apne brand tokens (tailwind.config.js → brand-600 #4a4488) se match
+          // hi nahi karta tha. Ab checkout widget bhi brand color mein khulega.
+          theme: { color: "#4a4488" },
 
           handler: async (response) => {
             try {

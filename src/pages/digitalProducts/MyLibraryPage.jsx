@@ -1,7 +1,7 @@
 // src/pages/digitalProduct/MyLibraryPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserLibrary, getAssetDownloadUrl } from "../../lib/digitalproduct.api";
+import { getUserLibrary, downloadProductBundle } from "../../lib/digitalproduct.api";
 import BranchBadge from "../../components/digitalproducts/BranchBadge";
 import Toast, { useToast } from "../../components/ui/Toast";
 // src/pages/digitalProduct/MyLibraryPage.jsx

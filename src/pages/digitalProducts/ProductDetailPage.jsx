@@ -5,7 +5,7 @@ import { AuthContext } from "../../context/AuthContext";
 import {
   getProductDetails,
   leaveProductEngagement,
-  getAssetDownloadUrl,
+  downloadProductBundle,
   claimFreeProduct,
 } from "../../lib/digitalproduct.api";
 import { useRazorpay } from "../../hooks/useRazorpay";
