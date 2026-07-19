@@ -19,6 +19,7 @@ import MyCommunities from "./pages/MyCommunities";
 import Notifications from "./pages/Notifications";
 
 import AdminPanel from "./pages/AdminPanel";
+import FriendsHub from "./pages/FriendsHub";
 
 //import AdminPanel from "./pages/AdminPanel"; //<Route path="/admin" element={<AdminPanel />} />
 
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/friends" element={<FriendsHub />} />
 
 
 

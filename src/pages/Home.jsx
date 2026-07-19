@@ -3,7 +3,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import Navbar from "../components/layout/Navbar";
-import { Copy, Check, Users2, Building2, ShoppingBag, Eye, Flame } from "lucide-react";
+import {
+  Copy, Check, Users2, Building2, ShoppingBag, Eye, Flame,
+  GraduationCap, ArrowUpRight, ImageOff,
+} from "lucide-react";
 
 // ─── Shared Image Enlarge Modal ────────────────────────────────────────────────
 function ImageEnlargeModal({ src, name, onClose, rounded = true }) {
@@ -134,9 +137,7 @@ function CommunityCircle({ c, onClick, onEnlarge }) {
   );
 }
 
-// ─── Copy-to-clipboard helper — falls back to execCommand when
-// navigator.clipboard is unavailable (older browsers / plain-http dev),
-// so a click can never throw an uncaught error. ───────────────────────────────
+// ─── Copy-to-clipboard helper ─────────────────────────────────────────────────
 function copyText(text) {
   if (!text) return Promise.resolve(false);
   if (navigator?.clipboard?.writeText) {
@@ -162,10 +163,6 @@ function copyFallback(text) {
 }
 
 // ─── Community Card ────────────────────────────────────────────────────────
-// Own component (not inline JSX in a .map) so each card owns its own
-// image-error / copy state independently — one broken banner or logo can
-// never break the rest of the grid, and rendering 3 or 300 cards costs the
-// same per-card logic (scalable).
 function CommunityCard({ c, isMember, onOpen, onEnlarge }) {
   const [bannerError, setBannerError] = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -193,9 +190,6 @@ function CommunityCard({ c, isMember, onOpen, onEnlarge }) {
       className="relative bg-navy-900 border border-white/10 hover:border-brand-500/50 rounded-2xl overflow-hidden cursor-pointer transition group"
       onClick={onOpen}
     >
-      {/* Banner strip — shows the community's own banner image. The soft
-          blue gradient is only a fallback while it loads, if none is set,
-          or if the image URL 404s — it never leaves a blank/broken box. */}
       <div
         className="h-16 relative overflow-hidden bg-gradient-to-r from-brand-900/50 to-brand-700/30"
         onClick={(e) => { if (hasBanner) { e.stopPropagation(); onEnlarge(c.banner_url, `${c.college_name} banner`); } }}
@@ -239,9 +233,6 @@ function CommunityCard({ c, isMember, onOpen, onEnlarge }) {
         </div>
       </div>
 
-      {/* Invite code — bottom-right corner, click to copy. Only renders
-          when the backend actually sends a code, so it never shows an
-          empty/broken chip. */}
       {c.invite_code && (
         <button
           type="button"
@@ -260,71 +251,116 @@ function CommunityCard({ c, isMember, onOpen, onEnlarge }) {
   );
 }
 
-// ─── Product Card (with college logo + click-to-enlarge) ─────────────────────
-function ProductCard({ p, onEnlargeLogo, onOpen }) {
-  const [imgError, setImgError] = useState(false);
+// ─── Feed-style Product Post ────────────────────────────────────────────────
+// Instagram/Bluesky jaisa single-column feed post — cards nahi, ek continuous
+// scroll feed. Own component so one broken image/college-logo never breaks
+// the rest of the feed (isolated error state per post).
+function ProductFeedPost({ p, onOpen, onEnlargeLogo }) {
+  const [imgError, setImgError]   = useState(false);
   const [logoError, setLogoError] = useState(false);
 
+  const hasImage = !!p.thumbnailUrl && !imgError;
+  const hasLogo  = !!p.college?.logo && !logoError;
+
   return (
-    <div
-      onClick={onOpen}
-      className="bg-white/[0.03] border border-white/8 rounded-2xl overflow-hidden hover:border-brand-500/50 transition-all group flex-shrink-0 w-64 sm:w-auto cursor-pointer"
-    >
-      <div className="relative h-40 bg-white/5 overflow-hidden">
-        {p.thumbnailUrl && !imgError ? (
+    <article className="border-b border-white/8 py-5 first:pt-0 last:border-b-0">
+      {/* Header — college identity, like an author row on a social feed */}
+      <div className="flex items-center gap-3 px-1 mb-3">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (hasLogo) onEnlargeLogo(p.college.logo, p.college.name);
+          }}
+          className="w-9 h-9 rounded-full bg-brand-600/30 flex items-center justify-center overflow-hidden flex-shrink-0 border border-white/10"
+        >
+          {hasLogo ? (
+            <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={() => setLogoError(true)} />
+          ) : (
+            <GraduationCap size={16} className="text-brand-300" />
+          )}
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate">{p.college?.name || "Independent Seller"}</p>
+          <p className="text-xs text-gray-500 truncate">{p.college?.university || (p.branch ? p.branch : "")}</p>
+        </div>
+        {p.isTrending && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 flex-shrink-0">
+            <Flame size={11} /> Trending
+          </span>
+        )}
+      </div>
+
+      {/* Media — clickable, opens product page */}
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block w-full rounded-2xl overflow-hidden bg-white/[0.03] border border-white/8 mb-3"
+      >
+        {hasImage ? (
           <img
             src={p.thumbnailUrl}
             alt={p.title || "Product"}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full max-h-[480px] object-cover"
             loading="lazy"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-brand-900/20">📦</div>
+          <div className="w-full aspect-[16/10] flex flex-col items-center justify-center gap-2 text-gray-600">
+            <ImageOff size={28} />
+            <span className="text-xs">No preview available</span>
+          </div>
         )}
-        <div className="absolute top-2 right-2">
-          <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${p.isPaid ? "bg-brand-600 text-white" : "bg-green-600 text-white"}`}>
+      </button>
+
+      {/* Caption */}
+      <div className="px-1">
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h3 className="font-semibold text-[15px] leading-snug">{p.title || "Untitled Product"}</h3>
+          <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded-full ${p.isPaid ? "bg-brand-600/20 text-brand-300" : "bg-green-600/20 text-green-400"}`}>
             {p.isPaid ? `₹${p.price || 0}` : "Free"}
           </span>
         </div>
-        {p.isTrending && (
-          <div className="absolute top-2 left-2">
-            <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-orange-500/90 text-white"><Flame size={10} /> Trending</span>
-          </div>
+        {p.description && (
+          <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-3">{p.description}</p>
         )}
-      </div>
-      <div className="p-4">
-        {p.branch && <span className="text-brand-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>}
-        <h3 className="text-white font-semibold text-sm mt-1 mb-1 line-clamp-2 leading-tight">{p.title || "Untitled Product"}</h3>
-        {p.description && <p className="text-gray-500 text-xs line-clamp-2 mb-3">{p.description}</p>}
-        <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
-          <span className="inline-flex items-center gap-1"><ShoppingBag size={12} /> {p.salesCount || 0} sold</span>
-          <span className="inline-flex items-center gap-1"><Eye size={12} /> {p.viewCount || 0} views</span>
-        </div>
 
-        {p.college?.name && (
-          <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (p.college.logo && !logoError) onEnlargeLogo(p.college.logo, p.college.name);
-              }}
-              className="w-5 h-5 rounded-full bg-brand-600/40 flex items-center justify-center overflow-hidden flex-shrink-0 hover:scale-110 transition"
-            >
-              {p.college.logo && !logoError ? (
-                <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={() => setLogoError(true)} />
-              ) : (
-                <span className="text-[8px] font-bold text-brand-300">{p.college.name[0]?.toUpperCase()}</span>
-              )}
-            </button>
-            <div className="min-w-0">
-              <p className="text-[10px] text-gray-500 truncate">{p.college.name}</p>
-              {p.college.university && <p className="text-[9px] text-gray-700 truncate">{p.college.university}</p>}
+        {/* Engagement row — like/comment-row equivalent, but with real stats */}
+        <div className="flex items-center gap-5 text-gray-500 text-xs">
+          <span className="inline-flex items-center gap-1.5"><Eye size={15} /> {p.viewCount || 0}</span>
+          <span className="inline-flex items-center gap-1.5"><ShoppingBag size={15} /> {p.salesCount || 0} sold</span>
+          {p.branch && <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-semibold uppercase tracking-wide">{p.branch}</span>}
+          <button
+            type="button"
+            onClick={onOpen}
+            className="ml-auto inline-flex items-center gap-1 text-brand-400 hover:text-brand-300 font-semibold transition"
+          >
+            View <ArrowUpRight size={14} />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// ─── Feed skeleton — loading state, matches feed shape (no layout jump) ─────
+function FeedSkeleton() {
+  return (
+    <div className="max-w-xl mx-auto">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="border-b border-white/8 py-5 first:pt-0 animate-pulse">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-full bg-white/5" />
+            <div className="flex-1">
+              <div className="h-3 w-28 bg-white/5 rounded mb-2" />
+              <div className="h-2.5 w-20 bg-white/5 rounded" />
             </div>
           </div>
-        )}
-      </div>
+          <div className="w-full aspect-[16/10] rounded-2xl bg-white/[0.03]" />
+          <div className="h-3 w-3/4 bg-white/5 rounded mt-3" />
+          <div className="h-2.5 w-1/2 bg-white/5 rounded mt-2" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -342,22 +378,14 @@ export default function Home() {
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [showDownload, setShowDownload] = useState(false);
   const [showAbout,    setShowAbout]   = useState(false);
-  const [enlargeImg,   setEnlargeImg]  = useState(null); // { src, name }
+  const [enlargeImg,   setEnlargeImg]  = useState(null);
 
   useEffect(() => {
     if (!user) refreshUser();
   }, []); // eslint-disable-line
 
-  // FIX: was reading user?.branch (field doesn't exist — profile returns
-  // `stream`), so the branch filter silently never applied. Also now re-runs
-  // once the async user profile finishes loading, and hard-filters to the
-  // user's branch (top 10-20) instead of mixing all branches together.
-  //
-  // REMOVED: the /api/home/stats call — the Students/Communities/Branches
-  // counter row was taken off the page, so that request was pure dead
-  // weight on every home-page load. One less network round trip now.
   useEffect(() => {
-    if (authLoading) return; // wait for AuthContext to resolve user first
+    if (authLoading) return;
 
     let isMounted = true;
     const fetchData = async () => {
@@ -372,6 +400,8 @@ export default function Home() {
         setCommunities(communitiesRes.data.data || []);
       } catch (err) {
         console.error("Home fetch error:", err);
+        // Crash-free: request fail ho to bhi page kaam kare, sections empty-state dikhayenge
+        if (isMounted) { setProducts([]); setCommunities([]); }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -382,12 +412,16 @@ export default function Home() {
 
   const joinCommunity = async () => {
     try {
-      await api.post("/api/createcollege/join", { invite_code: inviteCode });
+      const res = await api.post("/api/createcollege/join", {
+        invite_code: inviteCode,
+        collegeId: selectedCommunity._id,
+      });
       await refreshUser();
       setShowModal(false);
-      navigate(`/community/${selectedCommunity._id}`);
+      const joinedId = res.data?.college?._id || selectedCommunity._id;
+      navigate(`/community/${joinedId}`);
     } catch (err) {
-      if (err.response?.status === 400) {
+      if (err.response?.status === 400 && err.response?.data?.msg === "Already a member of this community") {
         setShowModal(false);
         navigate(`/community/${selectedCommunity._id}`);
       } else {
@@ -412,7 +446,6 @@ export default function Home() {
       {showAbout    && <AboutModal   onClose={() => setShowAbout(false)} />}
       {enlargeImg   && <ImageEnlargeModal src={enlargeImg.src} name={enlargeImg.name} onClose={() => setEnlargeImg(null)} />}
 
-      {/* ── NAVBAR (shared component — same across all pages, includes NotificationBell) ── */}
       <Navbar onAboutClick={() => setShowAbout(true)} />
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
@@ -457,12 +490,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── TRENDING PRODUCTS (user's own branch only, top 12) ─────────────────── */}
+      {/* ── TRENDING PRODUCTS — Instagram/Bluesky style vertical feed ─────────── */}
       <section id="marketplace" className="py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between mb-8">
+        <div className="max-w-xl mx-auto">
+          <div className="flex items-end justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-extrabold">
+              <h2 className="text-2xl font-extrabold">
                 {user?.stream ? `Trending in ${user.stream}` : "Trending Products"}
               </h2>
               <p className="text-gray-500 text-sm mt-1">
@@ -470,37 +503,33 @@ export default function Home() {
               </p>
             </div>
             <Link to="/marketplace" className="text-brand-400 hover:text-brand-300 text-xs font-semibold transition flex-shrink-0">
-              See all branches →
+              See all →
             </Link>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-64 bg-white/[0.03] border border-white/8 rounded-2xl animate-pulse" />)}
-            </div>
+            <FeedSkeleton />
           ) : products.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-5xl mb-4">🛒</div>
-              <p className="text-gray-500">No products yet — be the first to sell!</p>
+            <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl">
+              <div className="flex items-center justify-center mb-4 text-brand-400/60"><ShoppingBag size={40} /></div>
+              <p className="text-gray-500 text-sm">No products yet — be the first to sell!</p>
             </div>
           ) : (
-            <>
-              <div className="flex gap-4 overflow-x-auto pb-3 sm:hidden scrollbar-none">
-                {products.map((p) => (
-                  <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} onOpen={() => navigate(`/marketplace/${p._id}`)} />
-                ))}
-              </div>
-              <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((p) => (
-                  <ProductCard key={p._id} p={p} onEnlargeLogo={openEnlarge} onOpen={() => navigate(`/marketplace/${p._id}`)} />
-                ))}
-              </div>
-            </>
+            <div>
+              {products.map((p) => (
+                <ProductFeedPost
+                  key={p._id}
+                  p={p}
+                  onOpen={() => navigate(`/marketplace/${p._id}`)}
+                  onEnlargeLogo={openEnlarge}
+                />
+              ))}
+            </div>
           )}
         </div>
       </section>
 
-      {/* ── ACTIVE COMMUNITIES (with logo + banner + copyable invite code) ────── */}
+      {/* ── ACTIVE COMMUNITIES ────────────────────────────────────────────────── */}
       <section id="community" className="py-16 px-4 bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-8">
