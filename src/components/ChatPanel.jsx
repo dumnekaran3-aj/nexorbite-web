@@ -11,6 +11,7 @@
 import {
   useEffect, useState, useRef, useCallback, useContext,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import { getSocket } from "../lib/socket";
@@ -42,6 +43,12 @@ export const Icon = {
   pause:   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
   gallery: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
   link:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3 h-3"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+  dots:    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>,
+  ban:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>,
+  flag:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>,
+  user:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  bell:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  chevdown:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="6 9 12 15 18 9"/></svg>,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -404,9 +411,114 @@ function MediaGallery({ chatId, friend, onClose, onImageClick }) {
   );
 }
 
+// ─── ChatOptionsMenu — the 3-dot header menu (replaces the old plain status dot) ─
+// FIX: pehle header ke right side sirf ek connection-status "dot" tha (green/
+// yellow/red). Ab wahi jagah ek proper "⋮" menu button hai jisme profile,
+// media, mute, block, aur report jaise real options hain.
+function ChatOptionsMenu({ isReady, muted, onViewProfile, onMedia, onToggleMute, onBlock, onReport, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  const items = [
+    { key: "profile", label: "View Profile",            icon: Icon.user,  action: onViewProfile },
+    { key: "media",   label: "Media, links & files",     icon: Icon.gallery, action: onMedia },
+    { key: "mute",    label: muted ? "Unmute notifications" : "Mute notifications", icon: Icon.bell, action: onToggleMute },
+    { key: "block",   label: "Block user",               icon: Icon.ban,   action: onBlock,  danger: true },
+    { key: "report",  label: "Report user",              icon: Icon.flag,  action: onReport, danger: true },
+  ];
+
+  return (
+    <div ref={ref} className="absolute right-3 top-14 z-50 bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden min-w-[200px] py-1">
+      {/* Small live connection dot, kept inside the menu instead of taking header space */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isReady ? "bg-green-500" : "bg-yellow-500 animate-pulse"}`} />
+        <span className="text-[11px] text-gray-500">{isReady ? "Connected" : "Connecting..."}</span>
+      </div>
+      {items.map((it) => (
+        <button
+          key={it.key}
+          type="button"
+          onClick={() => { it.action(); onClose(); }}
+          className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition text-left hover:bg-white/5 ${it.danger ? "text-red-400" : "text-gray-300"}`}
+        >
+          {it.icon} {it.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── ReportModal ──────────────────────────────────────────────────────────────
+function ReportModal({ friend, onClose, onSubmit }) {
+  const [category, setCategory] = useState("spam");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const CATEGORIES = [
+    { key: "spam",          label: "Spam" },
+    { key: "abuse",         label: "Abuse / Harassment" },
+    { key: "fake",          label: "Fake account" },
+    { key: "inappropriate", label: "Inappropriate content" },
+    { key: "scam",          label: "Scam / Fraud" },
+    { key: "other",         label: "Other" },
+  ];
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      await onSubmit({ category, description });
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center bg-navy-950/80 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-[#141414] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold text-base mb-1">Report {friend?.fullName || friend?.username}</h3>
+        <p className="text-xs text-gray-500 mb-4">Our team will review this. This action is confidential.</p>
+
+        <div className="space-y-1.5 mb-3">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setCategory(c.key)}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm border transition ${category === c.key ? "bg-brand-600/20 border-brand-500/40 text-brand-300" : "bg-white/[0.03] border-white/5 text-gray-300 hover:bg-white/5"}`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add more details (optional)..."
+          rows={3}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500 resize-none mb-4"
+        />
+
+        <div className="flex gap-2">
+          <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-semibold transition">Cancel</button>
+          <button type="button" onClick={submit} disabled={submitting} className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-60 rounded-xl text-sm font-semibold transition">
+            {submitting ? "Submitting..." : "Submit Report"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── CHAT PANEL (default export) ─────────────────────────────────────────────
 export default function ChatPanel({ friend, myId, onClose }) {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const [messages,     setMessages]     = useState([]);
   const [text,         setText]         = useState("");
@@ -425,7 +537,23 @@ export default function ChatPanel({ friend, myId, onClose }) {
   const [friendOnline, setFriendOnline] = useState(false);
   const [lastSeen,     setLastSeen]     = useState(null);
 
+  // 🆕 3-dot menu / block / report / mute
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [muted,        setMuted]        = useState(false);
+  const [blocked,      setBlocked]      = useState(false);
+
+  // 🆕 Older-message pagination (scalability fix — pehle sirf latest 50
+  // messages hi load hote the, purani chat kabhi nahi milti thi)
+  const [loadingOlder,  setLoadingOlder]  = useState(false);
+  const [hasMoreOlder,  setHasMoreOlder]  = useState(true);
+
+  // 🆕 Smart auto-scroll — jab user upar purani chat dekh raha ho tab naya
+  // msg aane par force scroll na ho, sirf ek "New message" hint dikhe
+  const [showNewMsgHint, setShowNewMsgHint] = useState(false);
+
   const bottomRef       = useRef(null);
+  const scrollRef       = useRef(null);
   const inputRef        = useRef(null);
   const fileInputRef    = useRef(null);
   const typingTimer     = useRef(null);
@@ -436,6 +564,11 @@ export default function ChatPanel({ friend, myId, onClose }) {
   const isFetchingRef   = useRef(false);
   const mountedRef      = useRef(true);
   const keepFocusRef    = useRef(false);
+  const pageRef         = useRef(1);
+  const isNearBottomRef = useRef(true);
+  const prevScrollHeightRef = useRef(0);
+  const prevMsgCountRef = useRef(0);
+  const messageSourceRef = useRef("initial"); // "initial" | "append" | "prepend" | "other"
 
   const friendId = friend?._id ? String(friend._id) : null;
 
@@ -457,9 +590,23 @@ export default function ChatPanel({ friend, myId, onClose }) {
         if (!mountedRef.current) return;
         chatIdRef.current = id;
 
-        const msgsRes = await api.get(`/api/ecosystem/chat/${id}/messages`);
+        // 🆕 FIX: friend ka online/last-seen status ab turant milta hai —
+        // pehle chat open hote hi kuch nahi pata chalta tha, sirf agar chat
+        // khuli rehte hue koi live status-change event aa jaaye tabhi.
+        if (r.data?.friendStatus) {
+          setFriendOnline(!!r.data.friendStatus.isOnline);
+          if (r.data.friendStatus.lastSeen) setLastSeen(r.data.friendStatus.lastSeen);
+        }
+
+        pageRef.current = 1;
+        setHasMoreOlder(true);
+        const msgsRes = await api.get(`/api/ecosystem/chat/${id}/messages`, { params: { page: 1, limit: 30 } });
         if (!mountedRef.current) return;
-        setMessages([...(msgsRes.data?.messages || [])].reverse());
+        const firstBatch = msgsRes.data?.messages || [];
+        messageSourceRef.current = "initial";
+        setMessages([...firstBatch].reverse());
+        setHasMoreOlder(firstBatch.length === 30);
+        isNearBottomRef.current = true;
         api.put(`/api/ecosystem/chat/${id}/seen`).catch(() => {});
 
         const sock = getSocket();
@@ -484,6 +631,7 @@ export default function ChatPanel({ friend, myId, onClose }) {
 
     const onMessage = (msg) => {
       if (!mountedRef.current) return;
+      messageSourceRef.current = "append";
       setMessages((prev) => {
         if (msg._id && prev.some((m) => m._id === msg._id)) return prev;
         const ti = prev.findIndex((m) => m._tempId && m.text === msg.text && String(m.sender?._id||m.sender) === String(msg.sender?._id||msg.sender));
@@ -499,7 +647,7 @@ export default function ChatPanel({ friend, myId, onClose }) {
       setMessages((prev) => prev.map((m) => m.seenBy?.includes(seenBy) ? m : { ...m, seenBy: [...(m.seenBy||[]), seenBy] }));
     };
 
-    const onDeleted = ({ messageId }) => { if (mountedRef.current) setMessages((prev) => prev.filter((m) => m._id !== messageId)); };
+    const onDeleted = ({ messageId }) => { if (mountedRef.current) { messageSourceRef.current = "other"; setMessages((prev) => prev.filter((m) => m._id !== messageId)); } };
 
     const onTyping   = ({ username }) => { if (mountedRef.current && username === friendUsernameRef.current) setTyping(true); };
     const onStopType = () => { if (mountedRef.current) setTyping(false); };
@@ -530,7 +678,79 @@ export default function ChatPanel({ friend, myId, onClose }) {
     };
   }, [friendId]); // eslint-disable-line
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // 🔴 REAL BUG FIX: pehle hamesha "scrollIntoView" call hota tha jab bhi
+  // "messages" badalta tha — matlab agar user upar purani chat padh raha ho
+  // aur naya message aaye, to screen automatically force-scroll hoke neeche
+  // aa jaati thi (user ki jagah se hat jaata tha). Ab: sirf tabhi auto-scroll
+  // hoga jab user pehle se hi neeche (bottom ke paas) ho, ya first load ho.
+  // Warna sirf ek chhota "New message ↓" hint dikhega jo click karke neeche
+  // jaaya ja sakta hai.
+  useEffect(() => {
+    const el = scrollRef.current;
+    const source = messageSourceRef.current;
+    const countChanged = messages.length !== prevMsgCountRef.current;
+    prevMsgCountRef.current = messages.length;
+
+    if (!el || !countChanged) { messageSourceRef.current = "other"; return; }
+
+    if (source === "prepend") {
+      // Older messages loaded at top — keep the user's current view stable,
+      // don't jump them to the bottom.
+      requestAnimationFrame(() => {
+        const diff = el.scrollHeight - prevScrollHeightRef.current;
+        if (diff > 0) el.scrollTop += diff;
+      });
+    } else if (source === "initial" || isNearBottomRef.current) {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: source === "initial" ? "auto" : "smooth" });
+      });
+      setShowNewMsgHint(false);
+    } else {
+      setShowNewMsgHint(true);
+    }
+    messageSourceRef.current = "other";
+  }, [messages]);
+
+  // Track scroll position: know if user is near bottom, and trigger loading
+  // older messages when they scroll close to the top.
+  const handleScroll = useCallback((e) => {
+    const el = e.target;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom < 120;
+    if (isNearBottomRef.current) setShowNewMsgHint(false);
+
+    if (el.scrollTop < 60 && hasMoreOlder && !loadingOlder) {
+      loadOlderMessages();
+    }
+  }, [hasMoreOlder, loadingOlder]); // eslint-disable-line
+
+  const loadOlderMessages = useCallback(async () => {
+    const cid = chatIdRef.current;
+    if (!cid || loadingOlder || !hasMoreOlder) return;
+    setLoadingOlder(true);
+    const el = scrollRef.current;
+    prevScrollHeightRef.current = el ? el.scrollHeight : 0;
+    try {
+      const nextPage = pageRef.current + 1;
+      const res = await api.get(`/api/ecosystem/chat/${cid}/messages`, { params: { page: nextPage, limit: 30 } });
+      const older = res.data?.messages || [];
+      if (older.length > 0) {
+        messageSourceRef.current = "prepend";
+        setMessages((prev) => [...[...older].reverse(), ...prev]);
+        pageRef.current = nextPage;
+      }
+      setHasMoreOlder(older.length === 30);
+    } catch {
+      // silent — user can just scroll up again to retry
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [loadingOlder, hasMoreOlder]);
+
+  const scrollToBottomNow = () => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowNewMsgHint(false);
+  };
 
   const handleRetry = useCallback(async () => {
     if (isFetchingRef.current || !friendId) return;
@@ -541,8 +761,18 @@ export default function ChatPanel({ friend, myId, onClose }) {
       const id = r.data?.chatId;
       if (!id) throw new Error("chatId missing");
       chatIdRef.current = id;
-      const msgsRes = await api.get(`/api/ecosystem/chat/${id}/messages`);
-      setMessages([...(msgsRes.data?.messages || [])].reverse());
+      if (r.data?.friendStatus) {
+        setFriendOnline(!!r.data.friendStatus.isOnline);
+        if (r.data.friendStatus.lastSeen) setLastSeen(r.data.friendStatus.lastSeen);
+      }
+      pageRef.current = 1;
+      setHasMoreOlder(true);
+      const msgsRes = await api.get(`/api/ecosystem/chat/${id}/messages`, { params: { page: 1, limit: 30 } });
+      const firstBatch = msgsRes.data?.messages || [];
+      messageSourceRef.current = "initial";
+      setMessages([...firstBatch].reverse());
+      setHasMoreOlder(firstBatch.length === 30);
+      isNearBottomRef.current = true;
       const sock = getSocket();
       if (!sock.connected) sock.connect();
       sock.emit("join_room", { roomType: "chat", roomId: id });
@@ -558,7 +788,12 @@ export default function ChatPanel({ friend, myId, onClose }) {
     const socket = getSocket();
     clearTimeout(typingTimer.current);
     if (!typingStartRef.current) {
-      socket.emit("typing_start", { chatId: cid, username: myIdRef.current });
+      // 🔴 REAL BUG FIX: pehle yahan "username: myIdRef.current" bhej rahe the
+      // (jo actually mera USER ID hai, username nahi). Doosri taraf ka
+      // "user_typing" listener username ko friend ke *username* se compare
+      // karta hai — ID kabhi match hi nahi hoti thi, isliye "typing..." kabhi
+      // dikhta hi nahi tha. Ab asli username bheja ja raha hai.
+      socket.emit("typing_start", { chatId: cid, username: user?.username || myIdRef.current });
       typingStartRef.current = setTimeout(() => { typingStartRef.current = null; }, 1500);
     }
     typingTimer.current = setTimeout(() => { socket.emit("typing_stop", { chatId: cid }); }, 2000);
@@ -648,6 +883,34 @@ export default function ChatPanel({ friend, myId, onClose }) {
     if (e.key === "Escape") { setShowEmoji(false); setShowAttach(false); setReplyTo(null); setShowVoice(false); }
   };
 
+  // 🆕 3-dot menu actions
+  const handleViewProfile = () => { onClose(); navigate(`/profile/${friendId}`); };
+
+  const handleToggleMute = () => setMuted((m) => !m);
+
+  const handleBlock = async () => {
+    if (!window.confirm(`Block ${friend.fullName || friend.username}? They won't be able to message you.`)) return;
+    try {
+      await api.post("/api/ecosystem/friends/block", { userId: friendId });
+      setBlocked(true);
+      setChatError(null);
+      onClose();
+    } catch (e) {
+      setChatError(e?.response?.data?.msg || "Block failed.");
+      setTimeout(() => setChatError(null), 4000);
+    }
+  };
+
+  const handleReportSubmit = async ({ category, description }) => {
+    await api.post("/api/reports", {
+      targetType: "User",
+      targetId: friendId,
+      category,
+      description: description || undefined,
+    });
+    setChatError(null);
+  };
+
   const lastSeenText = () => {
     if (friendOnline) return <span className="text-green-400">Online</span>;
     if (!lastSeen) return <span>@{friend.username || ""}</span>;
@@ -672,29 +935,61 @@ export default function ChatPanel({ friend, myId, onClose }) {
       {viewImg    && <ImageModal src={viewImg} name="image" onClose={() => setViewImg(null)} />}
       {showGallery && <MediaGallery chatId={chatIdRef.current} friend={friend} onClose={() => setShowGallery(false)} onImageClick={(src) => { setShowGallery(false); setViewImg(src); }} />}
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-navy-950/70 backdrop-blur-sm">
-        <div className="bg-[#0f0f0f] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md h-[90vh] sm:h-[640px] flex flex-col overflow-hidden">
+      {showReportModal && (
+        <ReportModal friend={friend} onClose={() => setShowReportModal(false)} onSubmit={handleReportSubmit} />
+      )}
 
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414] flex-shrink-0">
+      {/* FIX: pehle ye ek chota centered card tha (max-w-md, h-[640px]) — ab
+          poori screen cover karta hai jab open ho, har screen size par. */}
+      <div className="fixed inset-0 z-50 flex flex-col bg-navy-950" style={{ height: "100dvh" }}>
+        <div className="bg-[#0f0f0f] flex flex-col overflow-hidden flex-1 min-h-0 relative">
+
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414] flex-shrink-0 relative">
             <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-white transition">{Icon.back}</button>
             <div className="relative flex-shrink-0">
               <img src={friend.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.fullName||"U")}&background=7c3aed&color=fff&bold=true`} alt={friend.fullName} className="w-9 h-9 rounded-full object-cover" />
               {friendOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#141414]" />}
             </div>
-            <div className="flex-1 min-w-0">
-              <button type="button" onClick={() => chatIdRef.current && setShowGallery(true)}
-                className="font-semibold text-sm truncate hover:text-brand-300 transition text-left w-full flex items-center gap-1">
+            <button type="button" onClick={handleViewProfile} className="flex-1 min-w-0 text-left">
+              <p className="font-semibold text-sm truncate hover:text-brand-300 transition">
                 {friend.fullName || friend.username}
-                <span className="text-gray-600 scale-75">{Icon.gallery}</span>
-              </button>
+              </p>
               <p className="text-[10px]">
                 {typing ? <span className="text-brand-400 animate-pulse">typing...</span> : lastSeenText()}
               </p>
-            </div>
-            <div title={isReady ? "Connected" : loading ? "Connecting..." : "Error"} className={`w-2 h-2 rounded-full flex-shrink-0 ${isReady ? "bg-green-500" : loading ? "bg-yellow-500 animate-pulse" : "bg-red-500"}`} />
+            </button>
+
+            {/* FIX: pehle yahan sirf ek plain connection "dot" hota tha
+                (right side). Ab ek proper 3-dot (⋮) menu button hai jisme
+                profile/media/mute/block/report jaise real options hain. */}
+            <button
+              type="button"
+              onClick={() => setShowOptionsMenu((v) => !v)}
+              className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition flex-shrink-0"
+              aria-label="Chat options"
+            >
+              {Icon.dots}
+            </button>
+            {showOptionsMenu && (
+              <ChatOptionsMenu
+                isReady={isReady}
+                muted={muted}
+                onViewProfile={handleViewProfile}
+                onMedia={() => chatIdRef.current && setShowGallery(true)}
+                onToggleMute={handleToggleMute}
+                onBlock={handleBlock}
+                onReport={() => setShowReportModal(true)}
+                onClose={() => setShowOptionsMenu(false)}
+              />
+            )}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
+          <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-3 min-h-0 relative">
+            {loadingOlder && (
+              <div className="flex justify-center py-2">
+                <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/>
+              </div>
+            )}
             {loading && <div className="flex flex-col items-center mt-12 gap-3"><div className="w-7 h-7 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/><p className="text-xs text-gray-500">Loading...</p></div>}
             {!loading && chatError && !isReady && (
               <div className="mt-8 px-4 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
@@ -715,6 +1010,18 @@ export default function ChatPanel({ friend, myId, onClose }) {
             {uploading && <div className="flex justify-end mt-1"><div className="px-4 py-2 bg-brand-600/40 rounded-2xl text-xs text-gray-300 flex items-center gap-2"><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>Uploading...</div></div>}
             <div ref={bottomRef} />
           </div>
+
+          {/* 🆕 "New message" hint — shown instead of yanking the user down
+              when they're reading older chat and a new message arrives */}
+          {showNewMsgHint && (
+            <button
+              type="button"
+              onClick={scrollToBottomNow}
+              className="absolute left-1/2 -translate-x-1/2 bottom-24 z-30 flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-full shadow-lg transition animate-bounce"
+            >
+              New message {Icon.chevdown}
+            </button>
+          )}
 
           {chatError && isReady && <div className="mx-4 mb-1 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl flex-shrink-0"><p className="text-red-400 text-xs text-center">{chatError}</p></div>}
 
@@ -768,7 +1075,13 @@ export default function ChatPanel({ friend, myId, onClose }) {
               autoCorrect="off"
               placeholder={loading ? "Connecting..." : !isReady ? (chatError ? "Error — Retry ↑" : "Connecting...") : "Message..."}
               disabled={!isReady || loading}
-              className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-brand-500 disabled:opacity-40 transition min-w-0"
+              dir="auto"
+              // 🔴 REAL BUG FIX (keyboard/input jump): text-sm renders at 14px.
+              // iOS Safari auto-zooms the page when a focused input is under
+              // 16px, which visually looks like "keyboard/input jump neeche
+              // ho jaana" after sending. Forcing 16px stops that zoom+jump.
+              style={{ fontSize: 16 }}
+              className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-white placeholder-gray-500 outline-none focus:border-brand-500 disabled:opacity-40 transition min-w-0"
             />
 
             {!text.trim() && (

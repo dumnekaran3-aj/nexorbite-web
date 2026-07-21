@@ -47,56 +47,109 @@ function DownloadModal({ onClose }) {
   );
 }
 
-// ─── About Modal ──────────────────────────────────────────────────────────────
+// ─── About Page (full-screen, clean layout with a real Back button) ──────────
+// FIX: pehle ye ek chota centered modal tha (max-w-lg card) — content padhne
+// me tight lagta tha aur sirf ek chhota "✕" hota tha. Ab poori screen cover
+// karta hai, header sticky rehta hai (Back button + brand), aur content
+// neatly sections me bata hai taaki samajhna aasan ho.
 function AboutModal({ onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  const FEATURES = [
+    { icon: "🏫", title: "Campus Community",  desc: "Join your college via invite code. Private, verified, real." },
+    { icon: "🛒", title: "Skill Marketplace", desc: "Sell CAD files, code, PCB layouts, notes and more." },
+    { icon: "💬", title: "Real-time Chat",    desc: "1-on-1 and group chat with your college community." },
+    { icon: "🤝", title: "Collaborate",       desc: "Find skilled students across branches for projects." },
+    { icon: "💰", title: "Earn Money",        desc: "Monetize your skills while still in college." },
+    { icon: "🔐", title: "Role Management",   desc: "Owner, Principal, HOD, Teacher, Student — full control." },
+  ];
+  const STEPS = [
+    { step: "01", title: "Download App",      desc: "Get NexOrbite from the Play Store." },
+    { step: "02", title: "Join Your College", desc: "Use your invite code to join your campus." },
+    { step: "03", title: "Build & Earn",      desc: "Share projects, sell products, collaborate." },
+  ];
+
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#0f0f0f] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-xl font-extrabold">About <span className="text-white">Nex</span><span className="text-brand-400">Orbite</span></h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition">✕</button>
+    <div className="fixed inset-0 z-[200] bg-navy-950 text-white flex flex-col" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      {/* Sticky header — proper Back option, not just a small close icon */}
+      <div className="flex-shrink-0 sticky top-0 z-10 bg-navy-950/95 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Back"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition text-sm font-medium"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <h1 id="about-title" className="text-lg sm:text-xl font-extrabold ml-1">
+            About <span className="text-white">Nex</span><span className="text-brand-400">Orbite</span>
+          </h1>
         </div>
-        <div className="px-6 py-5 border-b border-white/10">
-          <h3 className="text-lg font-bold mb-1">Everything in One Place</h3>
-          <p className="text-gray-400 text-sm mb-5">Built for students, by students</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { icon: "🏫", title: "Campus Community",  desc: "Join your college via invite code. Private, verified, real." },
-              { icon: "🛒", title: "Skill Marketplace", desc: "Sell CAD files, code, PCB layouts, notes and more." },
-              { icon: "💬", title: "Real-time Chat",    desc: "1-on-1 and group chat with your college community." },
-              { icon: "🤝", title: "Collaborate",       desc: "Find skilled students across branches for projects." },
-              { icon: "💰", title: "Earn Money",        desc: "Monetize your skills while still in college." },
-              { icon: "🔐", title: "Role Management",   desc: "Owner, Principal, HOD, Teacher, Student — full control." },
-            ].map((f) => (
-              <div key={f.title} className="flex gap-3 bg-white/[0.03] border border-white/8 rounded-2xl p-3">
-                <span className="text-2xl flex-shrink-0">{f.icon}</span>
-                <div>
-                  <p className="font-semibold text-sm">{f.title}</p>
-                  <p className="text-gray-500 text-xs mt-0.5">{f.desc}</p>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+
+          {/* Intro */}
+          <div className="mb-10 text-center sm:text-left">
+            <p className="text-2xl sm:text-3xl font-extrabold leading-snug mb-2">
+              Everything a student needs,<br className="hidden sm:block" /> in one campus ecosystem.
+            </p>
+            <p className="text-gray-400 text-sm sm:text-base max-w-xl mx-auto sm:mx-0">
+              NexOrbite connects your college community, chat, and skill marketplace — built for students, by students.
+            </p>
+          </div>
+
+          {/* Features */}
+          <div className="mb-10">
+            <h2 className="text-base font-bold mb-4 text-gray-200 uppercase tracking-wide text-xs">Everything in One Place</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {FEATURES.map((f) => (
+                <div key={f.title} className="flex gap-3 bg-white/[0.03] border border-white/8 rounded-2xl p-4 hover:bg-white/[0.05] transition">
+                  <span className="text-2xl flex-shrink-0" aria-hidden="true">{f.icon}</span>
+                  <div>
+                    <p className="font-semibold text-sm">{f.title}</p>
+                    <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{f.desc}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="px-6 py-5">
-          <h3 className="text-lg font-bold mb-1">How It Works</h3>
-          <p className="text-gray-400 text-sm mb-4">3 simple steps to get started</p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {[
-              { step: "01", title: "Download App",      desc: "Get NexOrbite from Play Store." },
-              { step: "02", title: "Join Your College", desc: "Use invite code to join your campus." },
-              { step: "03", title: "Build & Earn",      desc: "Share projects, sell products, collaborate." },
-            ].map((s) => (
-              <div key={s.step} className="flex-1 text-center bg-white/[0.03] border border-white/8 rounded-2xl p-4">
-                <p className="text-3xl font-extrabold text-brand-500/30 mb-1">{s.step}</p>
-                <p className="font-semibold text-sm">{s.title}</p>
-                <p className="text-gray-500 text-xs mt-1">{s.desc}</p>
-              </div>
-            ))}
+
+          {/* How it works */}
+          <div className="mb-10">
+            <h2 className="text-base font-bold mb-4 text-gray-200 uppercase tracking-wide text-xs">How It Works</h2>
+            <div className="flex flex-col sm:flex-row gap-4">
+              {STEPS.map((s) => (
+                <div key={s.step} className="flex-1 bg-white/[0.03] border border-white/8 rounded-2xl p-5 text-center sm:text-left">
+                  <p className="text-3xl font-extrabold text-brand-500/30 mb-1">{s.step}</p>
+                  <p className="font-semibold text-sm">{s.title}</p>
+                  <p className="text-gray-500 text-xs mt-1 leading-relaxed">{s.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="px-6 pb-6">
-          <button onClick={onClose} className="w-full py-3 bg-brand-600 hover:bg-brand-500 rounded-2xl text-sm font-bold transition">Close</button>
+
+          {/* Bottom action */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto sm:px-10 py-3 bg-brand-600 hover:bg-brand-500 rounded-2xl text-sm font-bold transition"
+          >
+            Got it, take me back
+          </button>
         </div>
       </div>
     </div>
