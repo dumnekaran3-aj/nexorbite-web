@@ -182,7 +182,11 @@ export default function CommunityView() {
   const [myRole, setMyRole]                 = useState(null);
   const [leaving, setLeaving]               = useState(false);
 
-  const friendIds = useMemo(() => new Set(friends.map((f) => String(f._id))), [friends]);
+  // Defensive guard: getFriends (backend) now filters out orphaned/deleted
+  // -user references before responding, but keeping a filter here too means
+  // this component can never white-screen from a bad friend entry, no
+  // matter where the data came from.
+  const friendIds = useMemo(() => new Set(friends.filter(Boolean).map((f) => String(f._id))), [friends]);
 
   const showToast = useCallback((msg, type = "success") => {
     setToast({ msg, type });
