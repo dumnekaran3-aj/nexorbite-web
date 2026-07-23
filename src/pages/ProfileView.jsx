@@ -2,6 +2,7 @@ import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
+import { getRoleDisplay } from "../lib/roleTiers";
 import MarketplaceQuickLinks from "../components/digitalproducts/MarketplaceQuickLinks";
 import {
   Pencil, BadgeCheck, Lock, Globe, GraduationCap, School,
@@ -276,7 +277,7 @@ const ROLE_STYLE = {
   student:   "bg-brand-500/15 text-brand-300 border-brand-500/30",
 };
 function RoleBadge({ role }) {
-  return <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide ${ROLE_STYLE[role] || ROLE_STYLE.student}`}>{role}</span>;
+  return <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide ${ROLE_STYLE[role] || ROLE_STYLE.student}`}>{getRoleDisplay(role)}</span>;
 }
 
 // Stat pill used in the profile header — plain <div> when not clickable,

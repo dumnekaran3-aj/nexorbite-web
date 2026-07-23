@@ -16,6 +16,7 @@ import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
+import { getRoleDisplay } from "../lib/roleTiers";
 
 // ── Avatar with click-to-enlarge ─────────────────────────────────────────
 function Avatar({ src, name, size = "w-28 h-28", onClick, online }) {
@@ -56,7 +57,7 @@ const RoleBadge = ({ role }) => {
   };
   return (
     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${map[role] || map.student}`}>
-      {role || "student"}
+      {getRoleDisplay(role || "student")}
     </span>
   );
 };

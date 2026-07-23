@@ -2,6 +2,7 @@ import { useEffect, useState, useContext, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
+import { getRoleDisplay } from "../lib/roleTiers";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ toast }) {
@@ -228,7 +229,7 @@ const ROLE_STYLE = {
 function RoleBadge({ role }) {
   return (
     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${ROLE_STYLE[role] || ROLE_STYLE.student}`}>
-      {role}
+      {getRoleDisplay(role)}
     </span>
   );
 }

@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import { getSocket } from "../lib/socket";
+import { getRoleDisplay } from "../lib/roleTiers";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 export const Icon = {
@@ -68,7 +69,7 @@ const EMOJI_LIST = [
 export const RoleBadge = ({ role }) => {
   const map = { owner:"bg-yellow-500/20 text-yellow-300 border-yellow-500/30", principal:"bg-blue-500/20 text-blue-300 border-blue-500/30", hod:"bg-teal-500/20 text-teal-300 border-teal-500/30", teacher:"bg-green-500/20 text-green-300 border-green-500/30", student:"bg-brand-500/20 text-brand-300 border-brand-500/30" };
   if (!role) return null;
-  return <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${map[role] || map.student}`}>{role}</span>;
+  return <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide ${map[role] || map.student}`}>{getRoleDisplay(role)}</span>;
 };
 
 // ─── ImageModal ───────────────────────────────────────────────────────────────
