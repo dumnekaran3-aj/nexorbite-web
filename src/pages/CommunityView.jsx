@@ -96,7 +96,7 @@ function SuggestionsTab({ navigate, sentIds, friendIds, onConnect, collegeQS }) 
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${u._id}`)}>
               <p className="font-semibold text-sm truncate">{u.fullName}</p>
               <p className="text-xs text-gray-500 truncate">@{u.username} · {u.stream||"—"}</p>
-              <RoleBadge role={u.collegeRole}/>
+              <RoleBadge role={u.role||u.collegeRole}/>
             </div>
             {!isFriend && <button type="button" onClick={() => onConnect(u._id)} disabled={isSent} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${isSent?"bg-navy-700/50 text-gray-500 cursor-not-allowed":"bg-brand-600 hover:bg-brand-500 text-white"}`}>{isSent?"Sent":"+ Connect"}</button>}
           </div>

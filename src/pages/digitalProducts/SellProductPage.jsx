@@ -1,8 +1,9 @@
 // src/pages/digitalProduct/SellProductPage.jsx
-import { useContext, useMemo, useState } from "react";
+import { useContext, useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { createDigitalProduct } from "../../lib/digitalproduct.api";
+import { getMyCommunities } from "../../lib/community.api";
 import Toast, { useToast } from "../../components/ui/Toast";
 import {
   BRANCHES,
@@ -45,10 +46,33 @@ export default function SellProductPage() {
     description: "",
     price: "",
     pushTo: "community",
+    collegeId: "", // BUG FIX (Part 3): which community this listing gets pushed to —
+                   // previously never sent, backend just guessed an arbitrary
+                   // membership row, so products could land in a random
+                   // community's feed instead of the one the seller intended.
   });
   const [attributes, setAttributes] = useState([]); // [{label, value}]
   const [cover, setCover] = useState(null);
   const [assetFiles, setAssetFiles] = useState({}); // { slotName: File }
+
+  // ── Communities this user can push a listing to ────────────────────────
+  const [communities, setCommunities] = useState([]); // [{collegeId, name, isprivate, myRole}]
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { privateCommunity, publicCommunities } = await getMyCommunities();
+      const all = [privateCommunity, ...publicCommunities].filter(Boolean);
+      if (cancelled) return;
+      setCommunities(all);
+      // Default to the private community if the seller has one — matches
+      // the "private community is home base" business rule — otherwise the
+      // first public community they belong to.
+      if (all.length > 0) {
+        setForm((p) => (p.collegeId ? p : { ...p, collegeId: all[0].collegeId }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const slots = useMemo(() => BRANCH_ASSET_SLOTS[form.branch] || [], [form.branch]);
@@ -68,6 +92,9 @@ export default function SellProductPage() {
     if (!form.title.trim()) e.title = "Title required";
     if (!form.description.trim()) e.description = "Description required";
     if (form.price === "" || Number(form.price) < 0) e.price = "Enter a valid price (0 for free)";
+    if (form.pushTo !== "none" && communities.length > 0 && !form.collegeId) {
+      e.collegeId = "Select which community this goes to";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -111,6 +138,9 @@ export default function SellProductPage() {
       fd.append("category", form.category);
       fd.append("price", form.price);
       fd.append("pushTo", form.pushTo);
+      if (form.pushTo !== "none" && form.collegeId) {
+        fd.append("collegeId", form.collegeId);
+      }
       fd.append(
         "attributes",
         JSON.stringify(attributes.filter((a) => a.label.trim() && a.value.trim()))
@@ -233,6 +263,32 @@ export default function SellProductPage() {
                   <option value="none">Marketplace only (don't push)</option>
                 </select>
               </Field>
+
+              {form.pushTo !== "none" && (
+                <Field
+                  label="Which community?"
+                  error={errors.collegeId}
+                  hint={
+                    communities.length === 0
+                      ? "You're not in any community yet — this will only be listed on the marketplace"
+                      : "Choose which of your communities sees this in their feed"
+                  }
+                >
+                  <select
+                    value={form.collegeId}
+                    onChange={(e) => set("collegeId", e.target.value)}
+                    className={iCls(errors.collegeId)}
+                    disabled={communities.length === 0}
+                  >
+                    {communities.length === 0 && <option value="">No communities joined</option>}
+                    {communities.map((c) => (
+                      <option key={c.collegeId} value={c.collegeId}>
+                        {c.name} {c.isprivate ? "(Private)" : "(Public)"}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
             </>
           )}
 
