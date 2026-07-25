@@ -20,6 +20,7 @@ import Notifications from "./pages/Notifications";
 
 import AdminPanel from "./pages/AdminPanel";
 import FriendsHub from "./pages/FriendsHub";
+import DiscoverPage from "./pages/DiscoverPage"; // 🆕 premium global skill/vibe match
 
 //import AdminPanel from "./pages/AdminPanel"; //<Route path="/admin" element={<AdminPanel />} />
 
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/friends" element={<FriendsHub />} />
+          <Route path="/discover" element={<DiscoverPage />} />{/* 🆕 */}
 
 
 

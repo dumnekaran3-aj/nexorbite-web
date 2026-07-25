@@ -2,12 +2,11 @@ import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
-import { getRoleDisplay } from "../lib/roleTiers";
 import MarketplaceQuickLinks from "../components/digitalproducts/MarketplaceQuickLinks";
 import {
   Pencil, BadgeCheck, Lock, Globe, GraduationCap, School,
   Copy, Check, Crown, Link2, PlusCircle, ChevronRight,
-  Users, ShoppingBag, ShieldCheck, Eye, X, Sparkles,
+  Users, ShoppingBag, ShieldCheck, Eye, X, Sparkles, Handshake,
 } from "lucide-react";
 
 // ─── Image Modal ──────────────────────────────────────────────────────────────
@@ -277,7 +276,7 @@ const ROLE_STYLE = {
   student:   "bg-brand-500/15 text-brand-300 border-brand-500/30",
 };
 function RoleBadge({ role }) {
-  return <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide ${ROLE_STYLE[role] || ROLE_STYLE.student}`}>{getRoleDisplay(role)}</span>;
+  return <span className={`text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide ${ROLE_STYLE[role] || ROLE_STYLE.student}`}>{role}</span>;
 }
 
 // Stat pill used in the profile header — plain <div> when not clickable,
@@ -313,6 +312,10 @@ export default function ProfileView() {
   const [friendsLoading, setFriendsLoading] = useState(true);
   const [showFriends,    setShowFriends]    = useState(false);
   const [enlargeFriend,  setEnlargeFriend]  = useState(null); // friend object being enlarged
+
+  // 🆕 Portfolio — apne Projects + Digital Products
+  const [myProjects, setMyProjects] = useState([]);
+  const [myProducts, setMyProducts] = useState([]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -353,6 +356,25 @@ export default function ProfileView() {
     })();
     return () => { cancelled = true; };
   }, [user?._id, isJoined]);
+
+  // 🆕 Portfolio fetch — "my profile portfolio jaisa dikhe"
+  useEffect(() => {
+    if (!user?._id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [projRes, prodRes] = await Promise.all([
+          api.get("/api/projects", { params: { owner: user._id, limit: 9 } }).catch(() => null),
+          api.get("/api/digital-products/all", { params: { seller: user._id, limit: 9 } }).catch(() => null),
+        ]);
+        if (!cancelled) {
+          setMyProjects(projRes?.data?.projects || []);
+          setMyProducts(prodRes?.data?.data || []);
+        }
+      } catch { /* silent — portfolio is a nice-to-have section */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user?._id]);
 
   const handleCommunitySuccess = async () => {
     setShowCreate(false);
@@ -470,14 +492,27 @@ export default function ProfileView() {
               {user.bio && (
                 <p className="text-sm text-gray-300 leading-relaxed mt-3">{user.bio}</p>
               )}
+
+              {/* 🆕 Skills — Discover feature ke liye set kiye gaye (vibe-matching) */}
+              {user.skills?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {user.skills.map((s) => (
+                    <span key={s} className="text-[11px] px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-300 border border-brand-500/20">{s}</span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-4 gap-1 mt-4 pt-4 border-t border-white/8">
-<StatItem icon={<Users size={16} />} value={user.friendsCount ?? friends.length} label="Collaborators" onClick={() => setShowFriends(true)} />
-              <StatItem icon={<ShoppingBag size={16} />} value={user.salesCount ?? 0} label="Sales" />
+            <div className="grid grid-cols-5 gap-1 mt-4 pt-4 border-t border-white/8">
+              <StatItem icon={<Users size={16} />} value={user.friendsCount ?? friends.length} label="Friends" onClick={() => setShowFriends(true)} />
+              {/* 🆕 FIX: pehle isी jagah "Collaborators" label tha lekin value
+                  friendsCount dikha raha tha — asli collabCount kahin dikhta
+                  hi nahi tha. Ab dono alag-alag, sahi values ke saath. */}
+              <StatItem icon={<Handshake size={16} />} value={user.collabCount ?? 0} label="Collabs" />
               <StatItem icon={<ShieldCheck size={16} />} value={user.trustScore ?? 0} label="Trust" />
-              <StatItem icon={<Eye size={16} />} value={user.uniqueImpressionsCount ?? 0} label="Impressions" />
+              <StatItem icon={<ShoppingBag size={16} />} value={user.salesCount ?? 0} label="Sales" />
+              <StatItem icon={<Eye size={16} />} value={user.uniqueImpressionsCount ?? 0} label="Views" />
             </div>
           </div>
         </div>
@@ -501,6 +536,43 @@ export default function ProfileView() {
 
         {/* ── Marketplace quick links (compact strip) ─────────────────────── */}
         <MarketplaceQuickLinks />
+
+        {/* 🆕 Portfolio — apne Projects + Digital Products (public profile jaisa) */}
+        {(myProjects.length > 0 || myProducts.length > 0) && (
+          <div className="bg-white/[0.03] border border-white/8 rounded-3xl p-5">
+            {myProjects.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wide mb-3">Projects ({myProjects.length})</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {myProjects.map((p) => (
+                    <button key={p._id} onClick={() => navigate(`/projects/${p._id}`)} className="text-left bg-white/[0.03] hover:bg-white/[0.06] border border-white/8 rounded-2xl overflow-hidden transition">
+                      <div className="aspect-video bg-white/5 overflow-hidden">
+                        {p.image ? <img src={p.image} alt={p.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xl">📁</div>}
+                      </div>
+                      <p className="text-[11px] font-semibold truncate px-2 py-1.5">{p.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {myProducts.length > 0 && (
+              <div className={myProjects.length > 0 ? "mt-5" : ""}>
+                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wide mb-3">Digital Products ({myProducts.length})</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {myProducts.map((p) => (
+                    <button key={p._id} onClick={() => navigate(`/marketplace/${p._id}`)} className="text-left bg-white/[0.03] hover:bg-white/[0.06] border border-white/8 rounded-2xl overflow-hidden transition">
+                      <div className="aspect-video bg-white/5 overflow-hidden">
+                        {p.thumbnail ? <img src={p.thumbnail} alt={p.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xl">🛍️</div>}
+                      </div>
+                      <p className="text-[11px] font-semibold truncate px-2 py-1.5">{p.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Not joined a community yet — Create / Join ──────────────────── */}
         {!isJoined && (
