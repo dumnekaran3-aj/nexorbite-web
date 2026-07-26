@@ -32,7 +32,7 @@ function SkillChip({ label }) {
 
 function DiscoverCard({ person, onCollabToggle }) {
   const navigate = useNavigate();
-  const [collabing, setCollabing] = useState(!!person.collabing);
+  const [collabing, setCollabing] = useState(!!person.isCollabing);
   const [busy, setBusy] = useState(false);
 
   const toggleCollab = async (e) => {

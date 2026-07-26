@@ -165,15 +165,26 @@ export default function Navbar({ onAboutClick }) {
         </div>
 
         {/* Mobile — same icon+label pattern, horizontal scroll, labels ALWAYS visible */}
-        <div className="md:hidden flex items-center gap-1 overflow-x-auto scrollbar-none">
+        <div className="md:hidden flex items-center gap-1 flex-1 min-w-0 justify-end">
+          {/* 🔴 FIX: nav tabs ka horizontal-scroll row ab ALAG hai — pehle
+              NotificationBell isी overflow-x-auto div ke andar tha. CSS rule:
+              jab overflow-x kuch bhi ho (visible ke alawa) aur overflow-y
+              set na ho, browser overflow-y ko bhi automatically "auto" bana
+              deta hai — isse bell ka dropdown panel (position: absolute,
+              neeche extend karta hai) silently clip ho jaata tha. Tap karne
+              par state to badalta tha, par panel kabhi dikhta hi nahi tha. */}
           {user && (
-            <>
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none min-w-0">
               <NavTab to="/my-communities" icon={NavIcon.communities} label="Groups" active={isActive("/my-communities")} compact />
               <NavTab to="/friends" icon={NavIcon.friends} label="Friends" active={isActive("/friends")} badge={pendingCount} compact />
               <NavTab to="/marketplace" icon={NavIcon.marketplace} label="Market" active={isActive("/marketplace")} compact />
               <NavTab to="/discover" icon={NavIcon.discover} label="Discover" active={isActive("/discover")} locked={!isPremium} compact />
+            </div>
+          )}
+          {user && (
+            <div className="flex-shrink-0">
               <NotificationBell />
-            </>
+            </div>
           )}
           <button
             onClick={() => setOpen(!open)}
