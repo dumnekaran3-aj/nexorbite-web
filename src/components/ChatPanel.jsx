@@ -231,6 +231,7 @@ function MsgMenu({ msg, isMine, onReply, onDeleteMe, onDeleteAll, onReact, onClo
 
 // ─── MessageBubble with swipe-to-reply ───────────────────────────────────────
 function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, onImageClick }) {
+  const navigate = useNavigate();
   const [menuOpen,  setMenuOpen]  = useState(false);
   const [reaction,  setReaction]  = useState(msg.reaction || null);
   const [swipeX,    setSwipeX]    = useState(0);
@@ -275,6 +276,12 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
   const isVoice  = msg.mediaType === "voice";
   const isFile   = hasMedia && !isImage && !isVideo && !isVoice;
 
+  // LIKE/SHARE FEATURE (new): Instagram-style "shared a project" bubble.
+  // sharedProduct is a snapshot taken at share-time (see backend
+  // shareProductToChat) — still renders fine even if the product is later
+  // edited/deleted, since it doesn't depend on a live fetch.
+  const sharedProduct = msg.messageType === "product_share" ? msg.sharedProduct : null;
+
   return (
     <div
       className={`flex flex-col relative ${isMine ? "items-end" : "items-start"} mb-1`}
@@ -292,7 +299,7 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
 
       {msg.replyTo && (
         <div className={`flex items-start gap-1 mb-1 max-w-[75%] px-2 py-1 rounded-xl border-l-2 border-brand-500 bg-white/5 text-xs text-gray-400 ${isMine ? "mr-1" : "ml-1"}`}>
-          <span className="truncate">{msg.replyTo?.text || "Media"}</span>
+          <span className="truncate">{msg.replyTo?.text || (msg.replyTo?.messageType === "product_share" ? "📦 Shared project" : "Media")}</span>
         </div>
       )}
 
@@ -313,6 +320,34 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
             </div>
           </a>
         )}
+
+        {/* LIKE/SHARE FEATURE (new) — Instagram-style shared-project card */}
+        {sharedProduct && (
+          <button
+            type="button"
+            onClick={() => sharedProduct.productId && navigate(`/marketplace/${sharedProduct.productId}`)}
+            className="block w-[240px] text-left hover:opacity-90 transition"
+          >
+            <div className="w-full aspect-video bg-navy-950/40 overflow-hidden">
+              {sharedProduct.thumbnailUrl ? (
+                <img src={sharedProduct.thumbnailUrl} alt={sharedProduct.title || "Product"} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No preview</div>
+              )}
+            </div>
+            <div className="px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide font-semibold opacity-70 mb-0.5">📦 Shared Project</p>
+              <p className="text-sm font-semibold leading-snug line-clamp-2">{sharedProduct.title || "Untitled Product"}</p>
+              {typeof sharedProduct.price === "number" && (
+                <p className="text-xs font-bold mt-1 opacity-90">
+                  {sharedProduct.price === 0 ? "Free" : `₹${sharedProduct.price}`}
+                </p>
+              )}
+              <p className="text-[11px] mt-1.5 opacity-80 underline underline-offset-2">View Project →</p>
+            </div>
+          </button>
+        )}
+
         {msg.text ? <SmartText text={msg.text} /> : null}
       </div>
 

@@ -9,6 +9,12 @@
 //    premium nahi hai to ek chhota lock-badge dikhta hai (feature abhi bhi
 //    tappable hai — click karne par upgrade-prompt milega, hide nahi kiya,
 //    taaki discovery/conversion bana rahe)
+//
+// 🔴 FIX (mobile scroll): pehle mobile pe nav-tabs logo ke saath USI row me
+//  the aur `overflow-x-auto` ke through horizontal-scroll karte the (jaisa
+//  screenshot me dikha — thumb-scrollbar niche tha). Ab mobile ke liye ek
+//  ALAG dusri row hai, poori width leti hai, aur 4 tabs `flex-1` se barabar
+//  space le lete hain — koi scroll nahi, sab kuch ek nazar me dikhta hai.
 import { useState, useContext, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -19,8 +25,10 @@ import api from "../../lib/api";
 const NavIcon = {
   communities: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <path d="M3 21V9l9-6 9 6v12" />
-      <path d="M9 21V12h6v9" />
+      <circle cx="9" cy="8" r="3" />
+      <circle cx="17" cy="8" r="2.3" />
+      <path d="M2 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1" />
+      <path d="M17 15.3a4 4 0 0 1 4 4V21" />
     </svg>
   ),
   marketplace: (
@@ -52,12 +60,15 @@ const NavIcon = {
 };
 
 // ─── One nav tab: icon on top, label always visible below (Facebook-app style) ──
+// `compact` = mobile mode. Ab compact mode me `flex-1` diya hai (fixed
+// min-width ki jagah) taaki 4 tabs poori row-width ko barabar baant lein
+// aur horizontal scroll ki zaroorat na pade.
 function NavTab({ to, icon, label, active, badge, locked, compact }) {
   return (
     <Link
       to={to}
-      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl transition flex-shrink-0
-        ${compact ? "px-2.5 py-1.5 min-w-[56px]" : "px-4 py-2 min-w-[68px]"}
+      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl transition
+        ${compact ? "flex-1 py-1 min-w-0" : "flex-shrink-0 px-4 py-2 min-w-[68px]"}
         ${active ? "text-brand-400 bg-brand-500/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
     >
       <span className="relative">
@@ -73,7 +84,7 @@ function NavTab({ to, icon, label, active, badge, locked, compact }) {
           </span>
         )}
       </span>
-      <span className={`font-semibold leading-none ${compact ? "text-[9px]" : "text-[10px]"} ${active ? "text-brand-400" : ""}`}>
+      <span className={`font-semibold leading-none truncate max-w-full ${compact ? "text-[9px]" : "text-[10px]"} ${active ? "text-brand-400" : ""}`}>
         {label}
       </span>
       {active && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-brand-500" />}
@@ -116,83 +127,85 @@ export default function Navbar({ onAboutClick }) {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-navy-900/95 backdrop-blur-md border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* ── Row 1: logo + desktop tabs/actions + mobile bell/hamburger ── */}
+        <div className="h-14 md:h-24 flex items-center justify-between gap-4">
 
-        {/* Logo — ab upar-aligned aur bada, jaisa Facebook ka wordmark */}
-        <Link to="/" className="flex-shrink-0 self-start pt-4">
-          <span className="text-white font-extrabold text-2xl sm:text-3xl tracking-tight leading-none">
-            Nex<span className="text-brand-500">Orbite</span>
-          </span>
-        </Link>
+          {/* Logo — ab upar-aligned aur bada, jaisa Facebook ka wordmark */}
+          <Link to="/" className="flex-shrink-0 md:self-start md:pt-4">
+            <span className="text-white font-extrabold text-xl sm:text-3xl tracking-tight leading-none">
+              Nex<span className="text-brand-500">Orbite</span>
+            </span>
+          </Link>
 
-        {/* Desktop — center icon+label nav tabs (classic pattern) */}
+          {/* Desktop — center icon+label nav tabs (classic pattern) */}
+          {user && (
+            <div className="hidden md:flex items-center gap-1">
+              <NavTab to="/my-communities" icon={NavIcon.communities} label="Communities" active={isActive("/my-communities")} />
+              <NavTab to="/friends" icon={NavIcon.friends} label="Friends" active={isActive("/friends")} badge={pendingCount} />
+              <NavTab to="/marketplace" icon={NavIcon.marketplace} label="Marketplace" active={isActive("/marketplace")} />
+              <NavTab to="/discover" icon={NavIcon.discover} label="Discover" active={isActive("/discover")} locked={!isPremium} />
+            </div>
+          )}
+
+          {!user && onAboutClick && (
+            <button onClick={onAboutClick} className="hidden md:block text-sm text-gray-400 hover:text-white transition">
+              About NexOrbite
+            </button>
+          )}
+
+          {/* Right side — desktop */}
+          <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+            {user ? (
+              <>
+                <NotificationBell />
+                <Link to="/profile" className="flex-shrink-0">
+                  <img
+                    src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.username || "U")}&background=5b54a4&color=fff`}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full border-2 border-brand-500 object-cover hover:scale-105 transition"
+                  />
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold px-5 py-2 rounded-full transition"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+
+          {/* Right side — mobile: sirf bell + hamburger, tabs ab neeche apni row me hain */}
+          <div className="md:hidden flex items-center gap-2 flex-shrink-0">
+            {user ? (
+              <NotificationBell />
+            ) : (
+              onAboutClick && (
+                <button onClick={onAboutClick} className="text-xs text-gray-400 hover:text-white transition">
+                  About
+                </button>
+              )
+            )}
+            <button
+              onClick={() => setOpen(!open)}
+              className="text-white text-2xl leading-none px-1"
+            >
+              {open ? "✕" : "☰"}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Row 2 (mobile only): nav tabs, full width, no scroll ── */}
         {user && (
-          <div className="hidden md:flex items-center gap-1">
-            <NavTab to="/my-communities" icon={NavIcon.communities} label="Communities" active={isActive("/my-communities")} />
-            <NavTab to="/friends" icon={NavIcon.friends} label="Friends" active={isActive("/friends")} badge={pendingCount} />
-            <NavTab to="/marketplace" icon={NavIcon.marketplace} label="Marketplace" active={isActive("/marketplace")} />
-            <NavTab to="/discover" icon={NavIcon.discover} label="Discover" active={isActive("/discover")} locked={!isPremium} />
+          <div className="md:hidden flex items-stretch gap-0.5 pb-1">
+            <NavTab to="/my-communities" icon={NavIcon.communities} label="Communities" active={isActive("/my-communities")} compact />
+            <NavTab to="/friends" icon={NavIcon.friends} label="Friends" active={isActive("/friends")} badge={pendingCount} compact />
+            <NavTab to="/marketplace" icon={NavIcon.marketplace} label="Market" active={isActive("/marketplace")} compact />
+            <NavTab to="/discover" icon={NavIcon.discover} label="Discover" active={isActive("/discover")} locked={!isPremium} compact />
           </div>
         )}
-
-        {!user && onAboutClick && (
-          <button onClick={onAboutClick} className="hidden md:block text-sm text-gray-400 hover:text-white transition">
-            About NexOrbite
-          </button>
-        )}
-
-        {/* Right side */}
-        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
-          {user ? (
-            <>
-              <NotificationBell />
-              <Link to="/profile" className="flex-shrink-0">
-                <img
-                  src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.username || "U")}&background=5b54a4&color=fff`}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full border-2 border-brand-500 object-cover hover:scale-105 transition"
-                />
-              </Link>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold px-5 py-2 rounded-full transition"
-            >
-              Sign In
-            </Link>
-          )}
-        </div>
-
-        {/* Mobile — same icon+label pattern, horizontal scroll, labels ALWAYS visible */}
-        <div className="md:hidden flex items-center gap-1 flex-1 min-w-0 justify-end">
-          {/* 🔴 FIX: nav tabs ka horizontal-scroll row ab ALAG hai — pehle
-              NotificationBell isी overflow-x-auto div ke andar tha. CSS rule:
-              jab overflow-x kuch bhi ho (visible ke alawa) aur overflow-y
-              set na ho, browser overflow-y ko bhi automatically "auto" bana
-              deta hai — isse bell ka dropdown panel (position: absolute,
-              neeche extend karta hai) silently clip ho jaata tha. Tap karne
-              par state to badalta tha, par panel kabhi dikhta hi nahi tha. */}
-          {user && (
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none min-w-0">
-              <NavTab to="/my-communities" icon={NavIcon.communities} label="Groups" active={isActive("/my-communities")} compact />
-              <NavTab to="/friends" icon={NavIcon.friends} label="Friends" active={isActive("/friends")} badge={pendingCount} compact />
-              <NavTab to="/marketplace" icon={NavIcon.marketplace} label="Market" active={isActive("/marketplace")} compact />
-              <NavTab to="/discover" icon={NavIcon.discover} label="Discover" active={isActive("/discover")} locked={!isPremium} compact />
-            </div>
-          )}
-          {user && (
-            <div className="flex-shrink-0">
-              <NotificationBell />
-            </div>
-          )}
-          <button
-            onClick={() => setOpen(!open)}
-            className="text-white text-2xl leading-none flex-shrink-0 px-1"
-          >
-            {open ? "✕" : "☰"}
-          </button>
-        </div>
       </div>
 
       {/* Mobile dropdown — profile link + about + sign in */}

@@ -105,3 +105,44 @@ export const claimFreeProduct = async (productId) => {
   const res = await api.post(`${BASE}/${productId}/claim-free`);
   return res.data; // { success, message, assets }
 };
+
+// ── LIKE / SHARE (new) ───────────────────────────────────────────────────────
+// Every function below is defensive: it resolves to a predictable object
+// instead of throwing, so a failed network call can never crash whatever
+// card/page called it — the caller just gets { success: false, msg }.
+
+// POST /api/digital-products/:productId/like — toggles like state for the caller.
+export const toggleLikeProduct = async (productId) => {
+  try {
+    const res = await api.post(`${BASE}/${productId}/like`);
+    return res.data; // { success, liked, likeCount }
+  } catch (err) {
+    return { success: false, msg: err?.response?.data?.message || "Could not update like" };
+  }
+};
+
+// POST /api/digital-products/:productId/share — "external share" half
+// (copy link / any OS share-sheet). Bumps shareCount and returns a
+// shareable URL.
+export const shareProductLink = async (productId) => {
+  try {
+    const res = await api.post(`${BASE}/${productId}/share`);
+    return res.data; // { success, shareUrl, shareCount, product }
+  } catch (err) {
+    return { success: false, msg: err?.response?.data?.message || "Could not generate share link" };
+  }
+};
+
+// POST /api/ecosystem/chat/share-product — "in-app share to a friend" half
+// (Instagram-style "Send to"). Lives on the chat router since it drops a
+// message into that 1-on-1 chat, but kept here alongside the other product
+// actions since that's where a component reaching for "share this product"
+// naturally looks first.
+export const shareProductToFriend = async ({ to, productId, text }) => {
+  try {
+    const res = await api.post("/api/ecosystem/chat/share-product", { to, productId, text });
+    return res.data; // { success, msg, message, chatId, shareCount }
+  } catch (err) {
+    return { success: false, msg: err?.response?.data?.msg || "Could not send" };
+  }
+};

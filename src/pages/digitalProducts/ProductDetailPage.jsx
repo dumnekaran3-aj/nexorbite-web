@@ -10,6 +10,7 @@ import {
 } from "../../lib/digitalproduct.api";
 import { useRazorpay } from "../../hooks/useRazorpay";
 import BranchBadge from "../../components/digitalproducts/BranchBadge";
+import ProductActions from "../../components/digitalproducts/ProductActions";
 import Toast, { useToast } from "../../components/ui/Toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -212,6 +213,17 @@ export default function ProductDetailPage() {
             <span>🛒 {product.salesCount} sold</span>
             <span>👁 {product.viewCount} views</span>
           </div>
+        </div>
+
+        {/* ── Like / Share (new) ────────────────────────────────────────── */}
+        <div className="mt-4">
+          <ProductActions
+            productId={product._id}
+            initialLiked={product.isLiked}
+            initialLikeCount={product.likeCount}
+            initialShareCount={product.shareCount}
+            size="md"
+          />
         </div>
 
         {/* ── Access status + action button ────────────────────────────── */}

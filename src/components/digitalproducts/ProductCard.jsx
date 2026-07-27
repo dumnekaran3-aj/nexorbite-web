@@ -1,5 +1,6 @@
 // src/components/digitalProduct/ProductCard.jsx
 import BranchBadge from "./BranchBadge";
+import ProductActions from "./ProductActions";
 
 export default function ProductCard({ product, onClick, footer }) {
   const seller = product.sellerId; // populated { fullName, username, avatar } or null
@@ -44,9 +45,21 @@ export default function ProductCard({ product, onClick, footer }) {
           </div>
         )}
 
-        <div className="flex items-center gap-3 mt-3 text-[11px] text-gray-600">
-          {typeof product.salesCount === "number" && <span>🛒 {product.salesCount}</span>}
-          {typeof product.viewCount === "number" && <span>👁 {product.viewCount}</span>}
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-3 text-[11px] text-gray-600">
+            {typeof product.salesCount === "number" && <span>🛒 {product.salesCount}</span>}
+            {typeof product.viewCount === "number" && <span>👁 {product.viewCount}</span>}
+          </div>
+
+          {/* LIKE/SHARE (new) — stops propagation internally so tapping
+              these buttons never triggers the card's onClick navigation */}
+          <ProductActions
+            productId={product._id}
+            initialLiked={product.isLiked}
+            initialLikeCount={product.likeCount}
+            initialShareCount={product.shareCount}
+            size="sm"
+          />
         </div>
 
         {footer}

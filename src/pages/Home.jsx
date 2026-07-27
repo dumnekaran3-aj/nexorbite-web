@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import Navbar from "../components/layout/Navbar";
+import ProductActions from "../components/digitalproducts/ProductActions";
 import {
   Copy, Check, Users2, Building2, ShoppingBag, Eye, Flame,
   GraduationCap, ArrowUpRight, ImageOff,
@@ -304,10 +305,13 @@ function CommunityCard({ c, isMember, onOpen, onEnlarge }) {
   );
 }
 
-// ─── Feed-style Product Post ────────────────────────────────────────────────
-// Instagram/Bluesky jaisa single-column feed post — cards nahi, ek continuous
-// scroll feed. Own component so one broken image/college-logo never breaks
-// the rest of the feed (isolated error state per post).
+// ─── Feed-style Product Post (X / Bluesky style) ────────────────────────────
+// Layout mirrors a real social post: avatar on the left, everything else
+// stacked to the right — header line, then the "post text" (title +
+// description), THEN the attached media card, then an evenly-spaced action
+// row (views · sold · like · share) exactly like Twitter's reply/retweet/
+// like/share row. Own component so one broken image/college-logo never
+// breaks the rest of the feed (isolated error state per post).
 function ProductFeedPost({ p, onOpen, onEnlargeLogo }) {
   const [imgError, setImgError]   = useState(false);
   const [logoError, setLogoError] = useState(false);
@@ -316,79 +320,103 @@ function ProductFeedPost({ p, onOpen, onEnlargeLogo }) {
   const hasLogo  = !!p.college?.logo && !logoError;
 
   return (
-    <article className="border-b border-white/8 py-5 first:pt-0 last:border-b-0">
-      {/* Header — college identity, like an author row on a social feed */}
-      <div className="flex items-center gap-3 px-1 mb-3">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (hasLogo) onEnlargeLogo(p.college.logo, p.college.name);
-          }}
-          className="w-9 h-9 rounded-full bg-brand-600/30 flex items-center justify-center overflow-hidden flex-shrink-0 border border-white/10"
-        >
-          {hasLogo ? (
-            <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={() => setLogoError(true)} />
-          ) : (
-            <GraduationCap size={16} className="text-brand-300" />
-          )}
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold truncate">{p.college?.name || "Independent Seller"}</p>
-          <p className="text-xs text-gray-500 truncate">{p.college?.university || (p.branch ? p.branch : "")}</p>
-        </div>
-        {p.isTrending && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 flex-shrink-0">
-            <Flame size={11} /> Trending
-          </span>
-        )}
-      </div>
-
-      {/* Media — clickable, opens product page */}
+    <article className="flex gap-3 px-1 py-4 border-b border-white/8 last:border-b-0 hover:bg-white/[0.015] transition">
+      {/* ── Avatar column ─────────────────────────────────────────────── */}
       <button
         type="button"
-        onClick={onOpen}
-        className="block w-full rounded-2xl overflow-hidden bg-white/[0.03] border border-white/8 mb-3"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (hasLogo) onEnlargeLogo(p.college.logo, p.college.name);
+        }}
+        className="w-11 h-11 rounded-full bg-brand-600/30 flex items-center justify-center overflow-hidden flex-shrink-0 border border-white/10 mt-0.5"
       >
-        {hasImage ? (
-          <img
-            src={p.thumbnailUrl}
-            alt={p.title || "Product"}
-            className="w-full max-h-[480px] object-cover"
-            loading="lazy"
-            onError={() => setImgError(true)}
-          />
+        {hasLogo ? (
+          <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={() => setLogoError(true)} />
         ) : (
-          <div className="w-full aspect-[16/10] flex flex-col items-center justify-center gap-2 text-gray-600">
-            <ImageOff size={28} />
-            <span className="text-xs">No preview available</span>
-          </div>
+          <GraduationCap size={18} className="text-brand-300" />
         )}
       </button>
 
-      {/* Caption */}
-      <div className="px-1">
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <h3 className="font-semibold text-[15px] leading-snug">{p.title || "Untitled Product"}</h3>
-          <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded-full ${p.isPaid ? "bg-brand-600/20 text-brand-300" : "bg-green-600/20 text-green-400"}`}>
-            {p.isPaid ? `₹${p.price || 0}` : "Free"}
-          </span>
-        </div>
-        {p.description && (
-          <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-3">{p.description}</p>
-        )}
+      {/* ── Content column ────────────────────────────────────────────── */}
+      <div className="min-w-0 flex-1">
 
-        {/* Engagement row — like/comment-row equivalent, but with real stats */}
-        <div className="flex items-center gap-5 text-gray-500 text-xs">
-          <span className="inline-flex items-center gap-1.5"><Eye size={15} /> {p.viewCount || 0}</span>
-          <span className="inline-flex items-center gap-1.5"><ShoppingBag size={15} /> {p.salesCount || 0} sold</span>
-          {p.branch && <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] font-semibold uppercase tracking-wide">{p.branch}</span>}
+        {/* Header line — identity + trending badge, Twitter-style */}
+        <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+          <span className="font-bold text-[15px] truncate">{p.college?.name || "Independent Seller"}</span>
+          {p.college?.university && (
+            <span className="text-gray-500 text-sm truncate hidden sm:inline">· {p.college.university}</span>
+          )}
+          {p.branch && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/5 text-gray-400 flex-shrink-0 ml-auto sm:ml-0">
+              {p.branch}
+            </span>
+          )}
+          {p.isTrending && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25 flex-shrink-0">
+              <Flame size={10} /> Trending
+            </span>
+          )}
+        </div>
+
+        {/* "Post text" — title is the tweet, description is the caption below */}
+        <button type="button" onClick={onOpen} className="block text-left w-full">
+          <p className="text-white text-[15px] leading-snug font-medium">
+            {p.title || "Untitled Product"}
+            <span className={`ml-2 inline-block align-middle text-xs font-bold px-2 py-0.5 rounded-full ${p.isPaid ? "bg-brand-600/20 text-brand-300" : "bg-green-600/20 text-green-400"}`}>
+              {p.isPaid ? `₹${p.price || 0}` : "Free"}
+            </span>
+          </p>
+          {p.description && (
+            <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mt-1">{p.description}</p>
+          )}
+        </button>
+
+        {/* Attached media card — Twitter-style: rounded, bordered, below the text */}
+        <button
+          type="button"
+          onClick={onOpen}
+          className="block w-full rounded-2xl overflow-hidden bg-white/[0.03] border border-white/10 mt-3"
+        >
+          {hasImage ? (
+            <img
+              src={p.thumbnailUrl}
+              alt={p.title || "Product"}
+              className="w-full max-h-[420px] object-cover"
+              loading="lazy"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full aspect-[16/9] flex flex-col items-center justify-center gap-2 text-gray-600">
+              <ImageOff size={26} />
+              <span className="text-xs">No preview available</span>
+            </div>
+          )}
+        </button>
+
+        {/* Action row — evenly spaced like Twitter's reply/retweet/like/share row */}
+        <div className="flex items-center justify-between max-w-sm mt-3 text-gray-500">
+          <span className="inline-flex items-center gap-1.5 text-xs">
+            <Eye size={15} /> {p.viewCount || 0}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs">
+            <ShoppingBag size={15} /> {p.salesCount || 0}
+          </span>
+
+          {/* LIKE/SHARE (new) — real, working buttons instead of static text */}
+          <ProductActions
+            productId={p._id}
+            initialLiked={p.isLiked}
+            initialLikeCount={p.likeCount}
+            initialShareCount={p.shareCount}
+            size="sm"
+          />
+
           <button
             type="button"
             onClick={onOpen}
-            className="ml-auto inline-flex items-center gap-1 text-brand-400 hover:text-brand-300 font-semibold transition"
+            className="inline-flex items-center gap-1 text-brand-400 hover:text-brand-300 font-semibold text-xs transition"
           >
-            View <ArrowUpRight size={14} />
+            View <ArrowUpRight size={13} />
           </button>
         </div>
       </div>
@@ -401,17 +429,14 @@ function FeedSkeleton() {
   return (
     <div className="max-w-xl mx-auto">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="border-b border-white/8 py-5 first:pt-0 animate-pulse">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-white/5" />
-            <div className="flex-1">
-              <div className="h-3 w-28 bg-white/5 rounded mb-2" />
-              <div className="h-2.5 w-20 bg-white/5 rounded" />
-            </div>
+        <div key={i} className="flex gap-3 px-1 py-4 border-b border-white/8 animate-pulse">
+          <div className="w-11 h-11 rounded-full bg-white/5 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="h-3 w-32 bg-white/5 rounded mb-2" />
+            <div className="h-3.5 w-3/4 bg-white/5 rounded mb-2" />
+            <div className="h-2.5 w-1/2 bg-white/5 rounded mb-3" />
+            <div className="w-full aspect-[16/9] rounded-2xl bg-white/[0.03]" />
           </div>
-          <div className="w-full aspect-[16/10] rounded-2xl bg-white/[0.03]" />
-          <div className="h-3 w-3/4 bg-white/5 rounded mt-3" />
-          <div className="h-2.5 w-1/2 bg-white/5 rounded mt-2" />
         </div>
       ))}
     </div>

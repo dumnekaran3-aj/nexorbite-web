@@ -14,6 +14,7 @@ import api from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { leaveCommunity } from "../lib/community.api";
 import ChatPanel, { Icon, RoleBadge, ImageModal } from "../components/ChatPanel";
+import ProductActions from "../components/digitalproducts/ProductActions";
 
 // ─── FeedTab ──────────────────────────────────────────────────────────────
 function FeedTab({ navigate, collegeQS }) {
@@ -41,7 +42,11 @@ function FeedTab({ navigate, collegeQS }) {
       {items.map((item, i) => {
         const p = item.product || {};
         return (
-          <div key={item._id||i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-brand-500/50 transition">
+          <div
+            key={item._id||i}
+            onClick={() => p._id && navigate(`/marketplace/${p._id}`)}
+            className={`bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-brand-500/50 transition ${p._id ? "cursor-pointer" : ""}`}
+          >
             {p.thumbnailUrl && <img src={p.thumbnailUrl} alt={p.title} className="w-full h-40 object-cover"/>}
             <div className="p-4">
               <span className="text-brand-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>
@@ -51,8 +56,21 @@ function FeedTab({ navigate, collegeQS }) {
                 <span className="text-brand-400 font-bold text-sm">{p.isPaid ? `₹${p.price}` : "Free"}</span>
                 <div className="flex items-center gap-3 text-xs text-gray-600"><span>{p.salesCount||0} sold</span><span>{p.viewCount||0} views</span></div>
               </div>
+              {/* LIKE/SHARE (new) — ProductActions stops propagation itself,
+                  so tapping these never triggers the card's navigate above */}
+              {p._id && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <ProductActions
+                    productId={p._id}
+                    initialLiked={p.isLiked}
+                    initialLikeCount={p.likeCount}
+                    initialShareCount={p.shareCount}
+                    size="sm"
+                  />
+                </div>
+              )}
               {item.seller && (
-                <button type="button" onClick={() => navigate(`/profile/${item.seller._id}`)} className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 w-full text-left hover:opacity-80 transition">
+                <button type="button" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${item.seller._id}`); }} className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 w-full text-left hover:opacity-80 transition">
                   <img src={item.seller.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(item.seller.fullName||"U")}&background=7c3aed&color=fff`} alt={item.seller.fullName} className="w-6 h-6 rounded-full object-cover"/>
                   <span className="text-xs text-gray-500">{item.seller.fullName}</span>
                 </button>
