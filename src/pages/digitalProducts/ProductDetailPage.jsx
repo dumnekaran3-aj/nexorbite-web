@@ -10,7 +10,6 @@ import {
 } from "../../lib/digitalproduct.api";
 import { useRazorpay } from "../../hooks/useRazorpay";
 import BranchBadge from "../../components/digitalproducts/BranchBadge";
-import ProductActions from "../../components/digitalproducts/ProductActions";
 import Toast, { useToast } from "../../components/ui/Toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,7 +111,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 text-center">
+      <div className="min-h-screen bg-navy-900 text-white pt-24 px-4 text-center">
         <p className="text-gray-500">Product not found or no longer available.</p>
       </div>
     );
@@ -127,7 +126,7 @@ export default function ProductDetailPage() {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(seller?.fullName || "U")}&background=4a4488&color=fff`;
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-24">
+    <div className="min-h-screen bg-navy-900 text-white pt-24 px-4 pb-24">
       <Toast toast={toast} />
 
       <Lightbox src={lightbox?.src} alt={lightbox?.alt} onClose={() => setLightbox(null)} />
@@ -213,17 +212,6 @@ export default function ProductDetailPage() {
             <span>🛒 {product.salesCount} sold</span>
             <span>👁 {product.viewCount} views</span>
           </div>
-        </div>
-
-        {/* ── Like / Share (new) ────────────────────────────────────────── */}
-        <div className="mt-4">
-          <ProductActions
-            productId={product._id}
-            initialLiked={product.isLiked}
-            initialLikeCount={product.likeCount}
-            initialShareCount={product.shareCount}
-            size="md"
-          />
         </div>
 
         {/* ── Access status + action button ────────────────────────────── */}

@@ -63,12 +63,15 @@ const NavIcon = {
 // `compact` = mobile mode. Ab compact mode me `flex-1` diya hai (fixed
 // min-width ki jagah) taaki 4 tabs poori row-width ko barabar baant lein
 // aur horizontal scroll ki zaroorat na pade.
-function NavTab({ to, icon, label, active, badge, locked, compact }) {
+// 🆕 `iconOnly` — Home page pe scroll karte waqt row2 (label wali row) hide
+// ho jaati hai aur ye ultra-compact icon-only tabs row1 ke andar hi dikhti
+// hain (jagah bachane ke liye). Baaki sab pages iska use nahi karte.
+function NavTab({ to, icon, label, active, badge, locked, compact, iconOnly }) {
   return (
     <Link
       to={to}
-      className={`relative flex flex-col items-center justify-center gap-1 rounded-xl transition
-        ${compact ? "flex-1 py-1 min-w-0" : "flex-shrink-0 px-4 py-2 min-w-[68px]"}
+      className={`relative flex flex-col items-center justify-center gap-0.5 rounded-xl transition
+        ${iconOnly ? "flex-1 py-1.5 min-w-0" : compact ? "flex-1 py-0.5 min-w-0" : "flex-shrink-0 px-4 py-2 min-w-[68px]"}
         ${active ? "text-brand-400 bg-brand-500/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
     >
       <span className="relative">
@@ -84,9 +87,11 @@ function NavTab({ to, icon, label, active, badge, locked, compact }) {
           </span>
         )}
       </span>
-      <span className={`font-semibold leading-none truncate max-w-full ${compact ? "text-[9px]" : "text-[10px]"} ${active ? "text-brand-400" : ""}`}>
-        {label}
-      </span>
+      {!iconOnly && (
+        <span className={`font-semibold leading-none truncate max-w-full ${compact ? "text-[9px]" : "text-[10px]"} ${active ? "text-brand-400" : ""}`}>
+          {label}
+        </span>
+      )}
       {active && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-brand-500" />}
     </Link>
   );
@@ -98,6 +103,33 @@ export default function Navbar({ onAboutClick }) {
   const location = useLocation();
   const [pendingCount, setPendingCount] = useState(0);
   const [isPremium, setIsPremium] = useState(true); // 🆕 BETA: Discover free for everyone right now
+
+  // 🆕 FIX (content hiding behind navbar + wasted space request):
+  // Sirf HOME page pe, jab user thoda scroll kare, navbar apne aap ek
+  // chhota single-row "compact" bar me simat jaata hai — "NexOrbite" naam
+  // ki jagah sirf logo icon dikhta hai aur neeche wali tabs-row usi row
+  // me icon-only ban jaati hai. Baaki SAARE pages (friends/marketplace/
+  // community/etc.) is se bilkul unaffected hain — unka navbar hamesha
+  // apni normal height par hi rehta hai jaisa pehle tha.
+  const isHome = location.pathname === "/";
+  const [scrolled, setScrolled] = useState(false);
+  const compact = isHome && scrolled;
+
+  useEffect(() => {
+    if (!isHome) { setScrolled(false); return; }
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 28);
+        ticking = false;
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
 
   // Friend-request badge
   useEffect(() => {
@@ -129,14 +161,39 @@ export default function Navbar({ onAboutClick }) {
     <nav className="fixed top-0 w-full z-50 bg-navy-900/95 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4">
         {/* ── Row 1: logo + desktop tabs/actions + mobile bell/hamburger ── */}
-        <div className="h-14 md:h-24 flex items-center justify-between gap-4">
+        {/* 🔧 Mobile height thoda tight kiya (h-14→h-12) taaki navbar overall
+            kam jagah le aur "NexOrbite" naam ke niche wali tabs-row se gap
+            bhi kam mehsoos ho. Desktop bilkul waisa hi hai (h-24). */}
+        <div className={`flex items-center justify-between gap-4 transition-[height] duration-150 ${compact ? "h-12" : "h-12 sm:h-14"} md:h-24`}>
 
-          {/* Logo — ab upar-aligned aur bada, jaisa Facebook ka wordmark */}
-          <Link to="/" className="flex-shrink-0 md:self-start md:pt-4">
-            <span className="text-white font-extrabold text-xl sm:text-3xl tracking-tight leading-none">
+          {/* Logo — normal state me poora wordmark. Sirf Home page pe scroll
+              karne par (mobile only) ye ek chhote logo-icon me badal jaata
+              hai — jagah bachane ke liye. Desktop pe hamesha wordmark hi. */}
+          <Link to="/" className="flex-shrink-0 md:self-start md:pt-4 flex items-center">
+            {compact && (
+              <img
+                src="/icons/icon-512x512.png"
+                alt="NexOrbite"
+                className="md:hidden w-8 h-8 rounded-lg object-cover"
+              />
+            )}
+            <span className={`text-white font-extrabold text-xl sm:text-3xl tracking-tight leading-none ${compact ? "hidden md:inline" : ""}`}>
               Nex<span className="text-brand-500">Orbite</span>
             </span>
           </Link>
+
+          {/* 🆕 Compact inline tabs — sirf Home page scroll ke waqt (mobile),
+              logo ke turant baad, icon-only. Row2 (label-wali row) isi waqt
+              hide ho jaati hai (niche dekho), toh total height bahut kam
+              lagti hai aur feed padhne ke liye zyada screen milti hai. */}
+          {user && compact && (
+            <div className="md:hidden flex items-stretch flex-1 justify-end gap-0.5 min-w-0">
+              <NavTab to="/my-communities" icon={NavIcon.communities} active={isActive("/my-communities")} iconOnly />
+              <NavTab to="/friends" icon={NavIcon.friends} active={isActive("/friends")} badge={pendingCount} iconOnly />
+              <NavTab to="/marketplace" icon={NavIcon.marketplace} active={isActive("/marketplace")} iconOnly />
+              <NavTab to="/discover" icon={NavIcon.discover} active={isActive("/discover")} locked={!isPremium} iconOnly />
+            </div>
+          )}
 
           {/* Desktop — center icon+label nav tabs (classic pattern) */}
           {user && (
@@ -198,8 +255,13 @@ export default function Navbar({ onAboutClick }) {
         </div>
 
         {/* ── Row 2 (mobile only): nav tabs, full width, no scroll ── */}
-        {user && (
-          <div className="md:hidden flex items-stretch gap-0.5 pb-1">
+        {/* 🔧 iske aur upar wali row ke beech ka extra space nikal diya
+            (pb-1 se pb-0.5, aur NavTab ka apna py bhi tight kiya) — ab
+            "NexOrbite" aur tabs ke beech khaali jagah kam dikhegi.
+            Ye row Home page pe compact mode me poori tarah hide ho jaati
+            hai (row1 ke andar hi icon-only tabs aa jaati hain upar). */}
+        {user && !compact && (
+          <div className="md:hidden flex items-stretch gap-0.5 pb-0.5">
             <NavTab to="/my-communities" icon={NavIcon.communities} label="Communities" active={isActive("/my-communities")} compact />
             <NavTab to="/friends" icon={NavIcon.friends} label="Friends" active={isActive("/friends")} badge={pendingCount} compact />
             <NavTab to="/marketplace" icon={NavIcon.marketplace} label="Market" active={isActive("/marketplace")} compact />

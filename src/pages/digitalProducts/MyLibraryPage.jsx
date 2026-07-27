@@ -40,7 +40,7 @@ export default function MyLibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-24 px-4 pb-16">
       <Toast toast={toast} />
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">

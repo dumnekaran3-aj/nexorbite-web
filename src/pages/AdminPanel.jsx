@@ -552,7 +552,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-24 px-4 pb-16">
       <Toast toast={toast} />
 
       {/* Kick confirm */}

@@ -163,7 +163,7 @@ export default function SellProductPage() {
   const STEP_LABELS = ["Branch", "Details", "Files", "Review"];
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white pt-20 px-4 pb-16">
+    <div className="min-h-screen bg-navy-900 text-white pt-24 px-4 pb-16">
       <Toast toast={toast} />
 
       <div className="max-w-2xl mx-auto">
@@ -376,8 +376,3 @@ export default function SellProductPage() {
     </div>
   );
 }
-
-
-
-
-

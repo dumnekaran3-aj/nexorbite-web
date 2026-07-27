@@ -157,7 +157,7 @@ export default function MyCommunities() {
       <Navbar />
       <Toast toast={toast} />
 
-      <div className="max-w-2xl mx-auto px-4 pt-28 pb-16">
+      <div className="max-w-2xl mx-auto px-4 pt-24 pb-16">
         <h1 className="text-2xl font-extrabold mb-1">My Communities</h1>
         <p className="text-gray-500 text-sm mb-8">
           Your private community + every public community you've joined.

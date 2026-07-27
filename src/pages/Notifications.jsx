@@ -120,7 +120,7 @@ export default function Notifications() {
     <div className="min-h-screen bg-navy-900 text-white">
       <Navbar />
 
-      <div className="max-w-2xl mx-auto px-4 pt-28 pb-16">
+      <div className="max-w-2xl mx-auto px-4 pt-24 pb-16">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-extrabold">Notifications</h1>
