@@ -14,7 +14,94 @@ import api from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { leaveCommunity } from "../lib/community.api";
 import ChatPanel, { Icon, RoleBadge, ImageModal } from "../components/ChatPanel";
+import GroupChatPanel from "../components/GroupChatPanel";
+import CreateGroupModal from "../components/CreateGroupModal";
+import { getGroups } from "../lib/group.api";
 import ProductActions from "../components/digitalproducts/ProductActions";
+
+// ─── GroupCard (WhatsApp-style — deliberately distinct from MemberCard /
+// friend-request cards: square-ish avatar frame + member-count subtitle,
+// not a circular person-avatar) ──────────────────────────────────────────
+function GroupCard({ group, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(group)}
+      className="w-full flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-2xl px-4 py-3 text-left transition"
+    >
+      <div className="w-12 h-12 rounded-xl overflow-hidden bg-brand-600 flex items-center justify-center text-lg font-extrabold flex-shrink-0">
+        {group.avatar ? <img src={group.avatar} alt="" className="w-full h-full object-cover" /> : group.name?.[0]?.toUpperCase() || "G"}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm truncate">{group.name}</p>
+        <p className="text-xs text-gray-500 truncate">{group.description || `${group.memberCount} member${group.memberCount === 1 ? "" : "s"}`}</p>
+      </div>
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <span className="text-[10px] text-gray-600">{group.memberCount}/{group.maxMembers}</span>
+        {group.myRole && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 capitalize">{group.myRole}</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+// ─── GroupsTab ────────────────────────────────────────────────────────────
+function GroupsTab({ groups, loading, canCreate, onCreateClick, onOpenGroup }) {
+  if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>;
+  return (
+    <div>
+      {canCreate && (
+        <button
+          type="button"
+          onClick={onCreateClick}
+          className="w-full mb-4 py-3 bg-brand-600/10 hover:bg-brand-600/20 border border-dashed border-brand-500/40 rounded-2xl text-brand-400 text-sm font-semibold transition flex items-center justify-center gap-2"
+        >
+          + Create Group
+        </button>
+      )}
+      {groups.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">{Icon.friends}</div>
+          <p className="text-gray-500 text-sm">No groups yet in this community.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {groups.map((g) => <GroupCard key={g._id} group={g} onOpen={onOpenGroup} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── GroupJoinPrompt (non-members clicking a group card land here instead
+// of the chat — spec: students self-request to join, admin approves) ──────
+function GroupJoinPrompt({ group, onClose, onRequested, showToast }) {
+  const [busy, setBusy] = useState(false);
+  const handleRequest = async () => {
+    setBusy(true);
+    const { requestToJoinGroup } = await import("../lib/group.api");
+    const res = await requestToJoinGroup(group._id);
+    setBusy(false);
+    if (res.success) { showToast("Join request sent!"); onRequested(); onClose(); }
+    else showToast(res.msg || "Could not send join request", "error");
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-brand-600 flex items-center justify-center text-2xl font-extrabold mx-auto mb-4">
+          {group.avatar ? <img src={group.avatar} alt="" className="w-full h-full object-cover" /> : group.name?.[0]?.toUpperCase() || "G"}
+        </div>
+        <h3 className="text-lg font-bold">{group.name}</h3>
+        <p className="text-gray-500 text-sm mt-1 mb-5">{group.description || `${group.memberCount} members`}</p>
+        <button type="button" disabled={busy} onClick={handleRequest} className="w-full py-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition mb-2">
+          {busy ? "Sending…" : "Request to Join"}
+        </button>
+        <button type="button" onClick={onClose} className="w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Cancel</button>
+      </div>
+    </div>
+  );
+}
 
 // ─── FeedTab ──────────────────────────────────────────────────────────────
 function FeedTab({ navigate, collegeQS }) {
@@ -200,6 +287,12 @@ export default function CommunityView() {
   const [myRole, setMyRole]                 = useState(null);
   const [leaving, setLeaving]               = useState(false);
 
+  const [groups, setGroups]                 = useState([]);
+  const [groupsLoading, setGroupsLoading]    = useState(false);
+  const [groupChatTarget, setGroupChatTarget]= useState(null); // { group, myRole }
+  const [joinPromptTarget, setJoinPromptTarget] = useState(null);
+  const [showCreateGroup, setShowCreateGroup]= useState(false);
+
   // Defensive guard: getFriends (backend) now filters out orphaned/deleted
   // -user references before responding, but keeping a filter here too means
   // this component can never white-screen from a bad friend entry, no
@@ -238,6 +331,16 @@ export default function CommunityView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, myId, routeCollegeId]);
 
+  const fetchGroups = useCallback(async () => {
+    if (!college?._id) return;
+    setGroupsLoading(true);
+    const res = await getGroups(college._id);
+    setGroups(res.groups || []);
+    setGroupsLoading(false);
+  }, [college?._id]);
+
+  useEffect(() => { fetchGroups(); }, [fetchGroups]);
+
   // Requests list lives on /friends now — this just gives a quick heads-up toast.
   useEffect(() => {
     if (!myId) return;
@@ -269,8 +372,11 @@ export default function CommunityView() {
     catch (e) { showToast(e?.response?.data?.msg || "cant send request", "error"); }
   };
 
+  const canCreateGroup = ["teacher", "hod", "principal", "owner"].includes(myRole);
+
   const tabs = [
     { key:"members",     label:"Members",  icon:Icon.users,   count:members.length },
+    { key:"groups",      label:"Groups",   icon:Icon.friends, count:groups.length },
     { key:"suggestions", label:"Discover", icon:Icon.suggest, count:null },
     { key:"feed",        label:"Feed",     icon:Icon.feed,    count:null },
   ];
@@ -304,9 +410,12 @@ export default function CommunityView() {
         </div>
       </div>
 
-      {/* Sticky tabs — offset now matches the fixed Navbar's real height so
-          this bar settles right below it instead of hiding behind it on scroll. */}
-      <div className="sticky top-[72px] z-40 bg-navy-950/90 backdrop-blur-md border-b border-white/10">
+      {/* Sticky tabs — FIX: offset ab Navbar ki ACTUAL responsive height
+          (h-12 sm:h-14 md:h-24 → 48px/56px/96px) se match karta hai.
+          Pehle hardcoded top-[72px] tha jo sirf ek breakpoint ke aas-paas
+          sahi tha — desktop (md:h-24 = 96px) pe tab-bar 24px navbar ke
+          peeche chhup jaata tha scroll karte waqt. */}
+      <div className="sticky top-12 sm:top-14 md:top-24 z-40 bg-navy-950/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex gap-1 overflow-x-auto scrollbar-none py-1">
             {tabs.map((t) => (
@@ -322,6 +431,15 @@ export default function CommunityView() {
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className={activeTab==="members"?"":"hidden"}><div className="space-y-2">{members.length===0&&<p className="text-center py-16 text-gray-600 text-sm">No members found.</p>}{members.map((m)=><MemberCard key={m._id} member={m} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest} onChat={setChatTarget} onProfile={setProfileUser}/>)}</div></div>
+        <div className={activeTab==="groups"?"":"hidden"}>
+          <GroupsTab
+            groups={groups}
+            loading={groupsLoading}
+            canCreate={canCreateGroup}
+            onCreateClick={() => setShowCreateGroup(true)}
+            onOpenGroup={(g) => (g.myRole ? setGroupChatTarget({ group: g, myRole: g.myRole }) : setJoinPromptTarget(g))}
+          />
+        </div>
         <div className={activeTab==="suggestions"?"":"hidden"}><SuggestionsTab navigate={navigate} sentIds={sentIds} friendIds={friendIds} onConnect={sendRequest} collegeQS={collegeQS}/></div>
         <div className={activeTab==="feed"?"":"hidden"}><FeedTab navigate={navigate} collegeQS={collegeQS}/></div>
       </div>
@@ -357,6 +475,33 @@ export default function CommunityView() {
       {profileUser && <ProfileModal user={profileUser} onClose={() => { setProfileUser(null); setEnlargeProfile(false); }} onChat={setChatTarget} isFriend={friendIds.has(String(profileUser._id))} isSent={sentIds.has(String(profileUser._id))} onConnect={sendRequest} onNavigate={navigate} enlargeAvatar={enlargeProfile} setEnlargeAvatar={setEnlargeProfile}/>}
 
       {chatTarget?._id && <ChatPanel friend={chatTarget} myId={String(myId)} onClose={() => setChatTarget(null)}/>}
+
+      {showCreateGroup && (
+        <CreateGroupModal
+          onClose={() => setShowCreateGroup(false)}
+          onCreated={() => fetchGroups()}
+          showToast={showToast}
+        />
+      )}
+
+      {joinPromptTarget && (
+        <GroupJoinPrompt
+          group={joinPromptTarget}
+          onClose={() => setJoinPromptTarget(null)}
+          onRequested={() => fetchGroups()}
+          showToast={showToast}
+        />
+      )}
+
+      {groupChatTarget?.group?._id && (
+        <GroupChatPanel
+          group={groupChatTarget.group}
+          myRole={groupChatTarget.myRole}
+          communityMembers={members}
+          onClose={() => { setGroupChatTarget(null); fetchGroups(); }}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

@@ -83,8 +83,8 @@ function RequestCard({ request, type, onAccept, onDecline, navigate }) {
       </div>
       {type === "incoming" && (
         <div className="flex gap-2">
-          <button type="button" onClick={() => onAccept(request._id)} className="w-8 h-8 bg-green-600/20 text-green-400 border border-green-500/30 rounded-full flex items-center justify-center hover:bg-green-600/40 transition">{Icon.check}</button>
-          <button type="button" onClick={() => onDecline(request._id)} className="w-8 h-8 bg-red-600/20 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center hover:bg-red-600/40 transition">{Icon.x}</button>
+          <button type="button" onClick={() => onAccept(request._id)} className="px-3 py-1.5 bg-green-600/20 text-green-400 border border-green-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-green-600/40 transition">{Icon.check} Accept</button>
+          <button type="button" onClick={() => onDecline(request._id)} className="px-3 py-1.5 bg-red-600/20 text-red-400 border border-red-500/30 rounded-full text-xs font-semibold flex items-center gap-1 hover:bg-red-600/40 transition">{Icon.x} Decline</button>
         </div>
       )}
       {type === "outgoing" && (

@@ -8,9 +8,11 @@ export default function Footer() {
           <p className="text-gray-500 text-xs font-normal mt-1">Campus Ecosystem & Skill Marketplace</p>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 max-w-xs md:max-w-none">
           <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
           <a href="/terms"   className="hover:text-white transition">Terms of Service</a>
+          <a href="/shipping-policy" className="hover:text-white transition">Shipping Policy</a>
+          <a href="/cancellation-refund" className="hover:text-white transition">Cancellation & Refunds</a>
           <a href="/contact" className="hover:text-white transition">Contact</a>
         </div>
 

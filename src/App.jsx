@@ -15,6 +15,12 @@ import CommunityView from "./pages/CommunityView";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
+
+
+import ShippingPolicy from "./pages/ShippingPolicy";
+import CancellationRefund from "./pages/CancellationRefund";
+
+
 import MyCommunities from "./pages/MyCommunities";
 import Notifications from "./pages/Notifications";
 
@@ -50,6 +56,10 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/contact" element={<Contact />} />
+          
+          <Route path="/shipping-policy" element={<ShippingPolicy />} />
+          <Route path="/cancellation-refund" element={<CancellationRefund />} />
+          
           <Route path="/friends" element={<FriendsHub />} />
           <Route path="/discover" element={<DiscoverPage />} />{/* 🆕 */}
 
