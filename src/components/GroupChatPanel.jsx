@@ -38,7 +38,7 @@ function ReactionPicker({ onPick, onClose }) {
 }
 
 // ─── MessageBubble ──────────────────────────────────────────────────────────
-function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onReact, onRemoveReaction, myId, onReply, onImageClick }) {
+function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onReact, onRemoveReaction, myId, onReply, onImageClick, stickerMap }) {
   const [showActions, setShowActions] = useState(false);
   const [showReactPicker, setShowReactPicker] = useState(false);
 
@@ -76,7 +76,9 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
             )}
 
             {msg.messageType === "sticker" && msg.stickerId && (
-              <p className="text-4xl leading-none">🏷️</p>
+              stickerMap[msg.stickerId]
+                ? <img src={stickerMap[msg.stickerId]} alt="sticker" className="w-24 h-24 object-contain" />
+                : <p className="text-4xl leading-none">🏷️</p>
             )}
 
             {msg.mediaType === "image" && msg.mediaUrl && (
@@ -140,6 +142,66 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
   );
 }
 
+// ─── AttachMenu (single "+" button ab yahan se photo/video, document,
+// sticker — teeno alag, scoped options kholta hai, WhatsApp jaisa) ────────
+function AttachMenu({ onPickPhotoVideo, onPickDocument, onPickSticker, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  const options = [
+    { key: "media", label: "Photo / Video", icon: Icon.img, action: onPickPhotoVideo, color: "bg-purple-500/20 text-purple-300" },
+    { key: "doc", label: "Document", icon: Icon.file, action: onPickDocument, color: "bg-blue-500/20 text-blue-300" },
+    { key: "sticker", label: "Sticker", icon: <span className="text-lg leading-none">😀</span>, action: onPickSticker, color: "bg-amber-500/20 text-amber-300" },
+  ];
+
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-2 z-30 bg-[#1c1c1e] border border-white/10 rounded-2xl p-2 shadow-2xl flex flex-col gap-1 min-w-[170px]">
+      {options.map((opt) => (
+        <button
+          key={opt.key}
+          type="button"
+          onClick={() => { opt.action(); onClose(); }}
+          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition text-left"
+        >
+          <span className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${opt.color}`}>{opt.icon}</span>
+          <span className="text-sm font-medium">{opt.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── StickerPicker ───────────────────────────────────────────────────────
+function StickerPicker({ stickers, onPick, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-2 z-30 bg-[#1c1c1e] border border-white/10 rounded-2xl p-3 shadow-2xl w-64">
+      <p className="text-xs text-gray-500 font-semibold mb-2">Stickers</p>
+      {stickers.length === 0 ? (
+        <p className="text-center text-gray-600 text-xs py-6">No stickers available</p>
+      ) : (
+        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+          {stickers.map((s) => (
+            <button key={s.id} type="button" onClick={() => onPick(s.id)} className="aspect-square rounded-xl bg-white/5 hover:bg-white/10 transition flex items-center justify-center overflow-hidden">
+              <img src={s.url} alt={s.id} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── AddMemberPicker ─────────────────────────────────────────────────────────
 function AddMemberPicker({ communityMembers, existingMemberIds, onAdd, onClose }) {
   const [query, setQuery] = useState("");
@@ -193,6 +255,23 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
   const [description, setDescription] = useState(group.description || "");
   const [messagePermission, setMessagePermission] = useState(group.messagePermission || "all");
   const [busy, setBusy] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef(null);
+
+  const handleAvatarPick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarUploading(true);
+    const res = await groupApi.uploadGroupAvatar(group._id, file);
+    setAvatarUploading(false);
+    if (res.success) {
+      showToast("Group photo updated");
+      onUpdated(res.group);
+    } else {
+      showToast(res.msg || "Could not upload photo", "error");
+    }
+  };
 
   const loadAdminData = useCallback(async () => {
     if (!isAdmin) return;
@@ -277,9 +356,19 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
         </div>
 
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden bg-brand-600 flex items-center justify-center text-2xl font-extrabold">
+          <button
+            type="button"
+            onClick={() => isAdmin && avatarInputRef.current?.click()}
+            className={`relative w-20 h-20 rounded-2xl overflow-hidden bg-brand-600 flex items-center justify-center text-2xl font-extrabold group/avatar ${isAdmin ? "cursor-pointer" : "cursor-default"}`}
+          >
             {group.avatar ? <img src={group.avatar} alt="" className="w-full h-full object-cover" /> : group.name?.[0]?.toUpperCase() || "G"}
-          </div>
+            {isAdmin && (
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center text-[10px] font-semibold transition">
+                {avatarUploading ? "Uploading…" : "Change"}
+              </div>
+            )}
+          </button>
+          {isAdmin && <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarPick} />}
 
           {editing ? (
             <div className="w-full mt-3 space-y-2 text-left">
@@ -397,9 +486,14 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [onlineCount, setOnlineCount] = useState(0);
   const [localToast, setLocalToast] = useState(null);
-  const fileInputRef = useRef(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [stickerPack, setStickerPack] = useState([]);
+  const photoVideoInputRef = useRef(null);
+  const documentInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimer = useRef(null);
+  const sendingRef = useRef(false); // double-send guard (see handleSend)
 
   const showToast = parentShowToast || ((msg, type) => {
     setLocalToast({ msg, type });
@@ -408,6 +502,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
 
   const isAdminOrCreator = myRole === "creator" || myRole === "admin";
   const canDeleteAny = isAdminOrCreator;
+  const stickerMap = Object.fromEntries(stickerPack.map((s) => [s.id, s.url]));
 
   // ── Load messages + group context ─────────────────────────────────────
   useEffect(() => {
@@ -429,6 +524,10 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group._id]);
+
+  useEffect(() => {
+    groupApi.getStickerPack().then(setStickerPack);
+  }, []);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -498,13 +597,28 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   };
 
   const handleSend = async () => {
-    if (!text.trim()) return;
-    const res = await groupApi.sendGroupMessage(group._id, text.trim(), replyingTo?._id);
-    if (res.success) {
-      setText("");
-      setReplyingTo(null);
-    } else {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    // FIX (double message bug): pehle koi guard nahi tha — mobile keyboards
+    // "Enter"/"Go" ke liye kabhi kabhi keydown event 2 baar fire karte hain,
+    // aur async call ke complete hone se pehle text/replyingTo clear nahi
+    // hote the, isliye dusra Enter/click firing wahi text+reply dobara bhej
+    // deta tha -> 2 alag messages ban jaate the. Ab sendingRef se turant
+    // (synchronously) re-entry block karte hain, aur input turant clear
+    // karte hain call jaane se pehle hi.
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+
+    const replyToId = replyingTo?._id;
+    setText("");
+    setReplyingTo(null);
+
+    const res = await groupApi.sendGroupMessage(group._id, trimmed, replyToId);
+    sendingRef.current = false;
+
+    if (!res.success) {
       showToast(res.msg || "Could not send message", "error");
+      setText(trimmed); // restore so user doesn't lose what they typed
     }
   };
 
@@ -514,6 +628,12 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     if (!file) return;
     const res = await groupApi.sendGroupMediaMessage(group._id, file);
     if (!res.success) showToast(res.msg || "Could not send file", "error");
+  };
+
+  const handleSendSticker = async (stickerId) => {
+    setShowStickerPicker(false);
+    const res = await groupApi.sendGroupSticker(group._id, stickerId);
+    if (!res.success) showToast(res.msg || "Could not send sticker", "error");
   };
 
   const handleDeleteMe = async (messageId) => {
@@ -577,6 +697,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
               onRemoveReaction={handleRemoveReaction}
               onReply={setReplyingTo}
               onImageClick={setEnlargedImage}
+              stickerMap={stickerMap}
             />
           ))
         )}
@@ -594,13 +715,29 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
         {!isAdminOrCreator && group.messagePermission === "admins_only" ? (
           <p className="text-center text-xs text-gray-500 py-2">Only group admins can send messages here</p>
         ) : (
-          <div className="flex items-center gap-2">
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFilePick} accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.zip" />
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2.5 text-gray-400 hover:text-white transition flex-shrink-0">{Icon.attach}</button>
+          <div className="flex items-center gap-2 relative">
+            {/* Hidden file inputs — separate, scoped `accept` per media kind */}
+            <input ref={photoVideoInputRef} type="file" className="hidden" onChange={handleFilePick} accept="image/*,video/*" />
+            <input ref={documentInputRef} type="file" className="hidden" onChange={handleFilePick} accept=".pdf,.doc,.docx,.txt,.zip,.ppt,.pptx,.xls,.xlsx" />
+
+            <button type="button" onClick={() => setShowAttachMenu((s) => !s)} className="p-2.5 text-gray-400 hover:text-white transition flex-shrink-0">{Icon.attach}</button>
+
+            {showAttachMenu && (
+              <AttachMenu
+                onClose={() => setShowAttachMenu(false)}
+                onPickPhotoVideo={() => photoVideoInputRef.current?.click()}
+                onPickDocument={() => documentInputRef.current?.click()}
+                onPickSticker={() => setShowStickerPicker(true)}
+              />
+            )}
+            {showStickerPicker && (
+              <StickerPicker stickers={stickerPack} onPick={handleSendSticker} onClose={() => setShowStickerPicker(false)} />
+            )}
+
             <input
               value={text}
               onChange={(e) => handleTyping(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); handleSend(); } }}
               placeholder="Message..."
               className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2.5 text-sm outline-none focus:border-brand-500"
             />
