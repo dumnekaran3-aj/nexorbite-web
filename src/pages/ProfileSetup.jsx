@@ -31,12 +31,12 @@ export default function ProfileSetup() {
   const [skillsLoaded, setSkillsLoaded] = useState(false);
 
   const streams = [
-    { label: "Computer Science", value: "cs" },
-    { label: "Mechanical", value: "mechanical" },
-    { label: "Electrical", value: "electrical" },
-    { label: "Designing", value: "desineing" },
-    { label: "Civil", value: "civil" },
-    { label: "Common (Arts & Commerce)", value: "commen" }
+    { label: "Computer Science", value: "Computer Science" },
+    { label: "Mechanical", value: "Mechanical" },
+    { label: "Electrical", value: "Electrical" },
+    { label: "Designing", value: "Designing" },
+    { label: "Civil", value: "Civil" },
+    { label: "Common (Arts & Commerce)", value: "Common (Arts & Commerce)" }
   ];
 
   useEffect(() => {

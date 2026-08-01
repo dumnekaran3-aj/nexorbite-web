@@ -314,38 +314,47 @@ function CommunityCard({ c, isMember, onOpen, onEnlarge }) {
 // breaks the rest of the feed (isolated error state per post).
 function ProductFeedPost({ p, onOpen, onEnlargeLogo }) {
   const [imgError, setImgError]   = useState(false);
-  const [logoError, setLogoError] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   const hasImage = !!p.thumbnailUrl && !imgError;
-  const hasLogo  = !!p.college?.logo && !logoError;
+
+  // BUG FIX (Part 2): identity ab hamesha SELLER hai, community/college nahi.
+  // Pehle card college/community ka naam+logo dikhata tha, jisse independent
+  // sellers (jo kisi community se push nahi karte) hamesha generic
+  // "Independent Seller" text ke saath dikhte the — asal seller kaun hai
+  // pata hi nahi chalta tha. Ab seller ka apna avatar + username dikhta hai
+  // aur unke profile (/profile/:userId) pe link karta hai.
+  const seller     = p.seller || p.sellerId || null;
+  const hasAvatar  = !!seller?.avatar && !avatarError;
+  const sellerName = seller?.username || seller?.fullName || "Independent Seller";
 
   return (
     <article className="flex gap-3 px-1 py-4 border-b border-white/8 last:border-b-0 hover:bg-white/[0.015] transition">
-      {/* ── Avatar column ─────────────────────────────────────────────── */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (hasLogo) onEnlargeLogo(p.college.logo, p.college.name);
-        }}
+      {/* ── Avatar column — links to the seller's own profile ──────────── */}
+      <Link
+        to={seller?._id ? `/profile/${seller._id}` : "#"}
+        onClick={(e) => e.stopPropagation()}
         className="w-11 h-11 rounded-full bg-brand-600/30 flex items-center justify-center overflow-hidden flex-shrink-0 border border-white/10 mt-0.5"
       >
-        {hasLogo ? (
-          <img src={p.college.logo} alt={p.college.name} className="w-full h-full object-cover" onError={() => setLogoError(true)} />
+        {hasAvatar ? (
+          <img src={seller.avatar} alt={sellerName} className="w-full h-full object-cover" onError={() => setAvatarError(true)} />
         ) : (
           <GraduationCap size={18} className="text-brand-300" />
         )}
-      </button>
+      </Link>
 
       {/* ── Content column ────────────────────────────────────────────── */}
       <div className="min-w-0 flex-1">
 
-        {/* Header line — identity + trending badge, Twitter-style */}
+        {/* Header line — seller identity + trending badge, Twitter-style */}
         <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-          <span className="font-bold text-[15px] truncate">{p.college?.name || "Independent Seller"}</span>
-          {p.college?.university && (
-            <span className="text-gray-500 text-sm truncate hidden sm:inline">· {p.college.university}</span>
-          )}
+          <Link
+            to={seller?._id ? `/profile/${seller._id}` : "#"}
+            onClick={(e) => e.stopPropagation()}
+            className="font-bold text-[15px] truncate hover:underline"
+          >
+            {sellerName}
+          </Link>
           {p.branch && (
             <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-white/5 text-gray-400 flex-shrink-0 ml-auto sm:ml-0">
               {p.branch}

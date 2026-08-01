@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { createDigitalProduct } from "../../lib/digitalproduct.api";
 import { getMyCommunities } from "../../lib/community.api";
+import api from "../../lib/api";
 import Toast, { useToast } from "../../components/ui/Toast";
 import {
   BRANCHES,
@@ -72,6 +73,18 @@ export default function SellProductPage() {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  // BUG FIX (Part 1 — Android "Something went wrong" on submit):
+  // Backend Render ke free tier par hosted hai jo inactivity ke baad "so"
+  // jaata hai aur agli request par 30-60s cold-start leta hai. Agar user
+  // seedha submit karta (jisme multiple file uploads ek saath jaate hain)
+  // aur backend abhi so raha ho, toh connection timeout/reset ho jaata tha —
+  // aur wahi "Something went wrong" generic error dikhta tha. Fix: page load
+  // hote hi ek halka background ping bhej do, taaki jab tak user 4 steps
+  // fill karega, backend wake ho chuka ho.
+  useEffect(() => {
+    api.get("/api/health").catch(() => {}); // fire-and-forget, silently ignore
   }, []);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -154,7 +167,15 @@ export default function SellProductPage() {
       showToast("Product listed successfully! 🎉", "success");
       setTimeout(() => navigate(`/marketplace/${result.product._id}`), 1000);
     } catch (err) {
-      showToast(err?.response?.data?.message || "Something went wrong", "error");
+      // BUG FIX (Part 1): err.response missing hone ka matlab hai request
+      // server tak pahunchi hi nahi (cold-start / slow network / connection
+      // drop) — is case mein purana code hamesha "Something went wrong"
+      // dikhata tha jo misleading tha. Ab specific, actionable message.
+      if (!err?.response) {
+        showToast("Connection slow hai ya server abhi wake ho raha hai — thodi der ruk kar dobara 'Publish' dabao.", "error");
+      } else {
+        showToast(err.response.data?.message || "Something went wrong", "error");
+      }
     } finally {
       setSubmitting(false);
     }

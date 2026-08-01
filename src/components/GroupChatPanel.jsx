@@ -17,6 +17,7 @@ import * as groupApi from "../lib/group.api";
 
 const fmtTime = (d) => new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const fmtSize = (b) => (b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
+const fmtDuration = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
@@ -76,9 +77,7 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
             )}
 
             {msg.messageType === "sticker" && msg.stickerId && (
-              stickerMap[msg.stickerId]
-                ? <img src={stickerMap[msg.stickerId]} alt="sticker" className="w-24 h-24 object-contain" />
-                : <p className="text-4xl leading-none">🏷️</p>
+              <p className="text-5xl leading-none">{stickerMap[msg.stickerId] || "🏷️"}</p>
             )}
 
             {msg.mediaType === "image" && msg.mediaUrl && (
@@ -192,8 +191,8 @@ function StickerPicker({ stickers, onPick, onClose }) {
       ) : (
         <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
           {stickers.map((s) => (
-            <button key={s.id} type="button" onClick={() => onPick(s.id)} className="aspect-square rounded-xl bg-white/5 hover:bg-white/10 transition flex items-center justify-center overflow-hidden">
-              <img src={s.url} alt={s.id} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+            <button key={s.id} type="button" onClick={() => onPick(s.id)} className="aspect-square rounded-xl bg-white/5 hover:bg-white/10 transition flex items-center justify-center text-2xl">
+              {s.emoji}
             </button>
           ))}
         </div>
@@ -489,8 +488,14 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [stickerPack, setStickerPack] = useState([]);
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const photoVideoInputRef = useRef(null);
   const documentInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const micStreamRef = useRef(null);
+  const recordingIntervalRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimer = useRef(null);
   const sendingRef = useRef(false); // double-send guard (see handleSend)
@@ -502,7 +507,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
 
   const isAdminOrCreator = myRole === "creator" || myRole === "admin";
   const canDeleteAny = isAdminOrCreator;
-  const stickerMap = Object.fromEntries(stickerPack.map((s) => [s.id, s.url]));
+  const stickerMap = Object.fromEntries(stickerPack.map((s) => [s.id, s.emoji]));
 
   // ── Load messages + group context ─────────────────────────────────────
   useEffect(() => {
@@ -630,6 +635,83 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     if (!res.success) showToast(res.msg || "Could not send file", "error");
   };
 
+  // ── Voice recording (live mic — MediaRecorder API) ───────────────────
+  // Codec chosen by browser support: Chrome/Android -> audio/webm,
+  // Safari/iOS -> audio/mp4. Backend (S3.config.js allowedMimeTypes.audio)
+  // now accepts both, plus common Android variants (aac/3gpp/m4a).
+  const pickSupportedMimeType = () => {
+    const candidates = ["audio/webm", "audio/mp4", "audio/ogg"];
+    for (const type of candidates) {
+      if (window.MediaRecorder?.isTypeSupported?.(type)) return type;
+    }
+    return ""; // let the browser pick a default
+  };
+
+  const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      showToast("Voice recording is not supported on this browser", "error");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      const mimeType = pickSupportedMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+      setRecordingSeconds(0);
+      recordingIntervalRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+    } catch (err) {
+      showToast("Microphone permission denied", "error");
+    }
+  };
+
+  const stopMicAndTimer = () => {
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
+    clearInterval(recordingIntervalRef.current);
+    setRecording(false);
+  };
+
+  const stopRecordingAndSend = () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    const duration = recordingSeconds;
+
+    recorder.onstop = async () => {
+      const mimeType = recorder.mimeType || "audio/webm";
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
+      const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `voice_${Date.now()}.${ext}`, { type: mimeType });
+
+      const res = await groupApi.sendGroupMediaMessage(group._id, file, { isVoice: true, duration });
+      if (!res.success) showToast(res.msg || "Could not send voice message", "error");
+    };
+
+    recorder.stop();
+    stopMicAndTimer();
+  };
+
+  const cancelRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder) {
+      recorder.onstop = null; // discard — koi upload nahi
+      if (recorder.state !== "inactive") recorder.stop();
+    }
+    audioChunksRef.current = [];
+    stopMicAndTimer();
+  };
+
+  // Unmount pe agar recording chal rahi ho to mic band karo (leak-safe)
+  useEffect(() => () => { micStreamRef.current?.getTracks().forEach((t) => t.stop()); clearInterval(recordingIntervalRef.current); }, []);
+
   const handleSendSticker = async (stickerId) => {
     setShowStickerPicker(false);
     const res = await groupApi.sendGroupSticker(group._id, stickerId);
@@ -714,6 +796,13 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
         )}
         {!isAdminOrCreator && group.messagePermission === "admins_only" ? (
           <p className="text-center text-xs text-gray-500 py-2">Only group admins can send messages here</p>
+        ) : recording ? (
+          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-2.5">
+            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
+            <span className="text-sm text-red-300 font-mono flex-1">{fmtDuration(recordingSeconds)}</span>
+            <button type="button" onClick={cancelRecording} className="p-1.5 text-gray-400 hover:text-white transition flex-shrink-0" title="Cancel">{Icon.x}</button>
+            <button type="button" onClick={stopRecordingAndSend} className="p-2 bg-brand-600 hover:bg-brand-500 text-white rounded-full transition flex-shrink-0" title="Send">{Icon.send2}</button>
+          </div>
         ) : (
           <div className="flex items-center gap-2 relative">
             {/* Hidden file inputs — separate, scoped `accept` per media kind */}
@@ -741,7 +830,12 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
               placeholder="Message..."
               className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2.5 text-sm outline-none focus:border-brand-500"
             />
-            <button type="button" onClick={handleSend} disabled={!text.trim()} className="p-2.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full transition flex-shrink-0">{Icon.send2}</button>
+
+            {text.trim() ? (
+              <button type="button" onClick={handleSend} className="p-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-full transition flex-shrink-0">{Icon.send2}</button>
+            ) : (
+              <button type="button" onClick={startRecording} className="p-2.5 text-gray-400 hover:text-white transition flex-shrink-0" title="Record voice message">{Icon.mic}</button>
+            )}
           </div>
         )}
       </div>

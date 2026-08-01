@@ -8,7 +8,7 @@ import api from "./api";
 
 const fail = (err, fallback) => ({
   success: false,
-  msg: err.response?.data?.msg || fallback,
+  msg: err.response?.data?.msg || err.response?.data?.message || fallback,
   status: err.response?.status,
 });
 

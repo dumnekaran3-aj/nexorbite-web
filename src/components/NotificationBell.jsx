@@ -21,6 +21,11 @@ const NOTIF_ICONS = {
   new_product:          "🛒",
   new_feed:             "📢",
   member_suggestion:    "🔍",
+  group_join_request:      "🙋",
+  group_join_accepted:     "🎉",
+  group_join_declined:     "🚫",
+  added_to_group:          "👥",
+  promoted_to_group_admin: "⭐",
 };
 
 function NotifItem({ notif, onRead, onNavigate }) {
