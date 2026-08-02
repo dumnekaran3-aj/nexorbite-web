@@ -34,9 +34,15 @@ export const getMyGroups = async (collegeId) => {
 export const getGroupById = async (groupId) => {
   try {
     const res = await api.get(`/api/ecosystem/groups/${groupId}`);
-    return { success: true, group: res.data?.group || null, myRole: res.data?.myRole || null };
+    return {
+      success: true,
+      group: res.data?.group || null,
+      myRole: res.data?.myRole || null,
+      isMuted: res.data?.isMuted || false,
+      isFavorite: res.data?.isFavorite || false,
+    };
   } catch (err) {
-    return { success: false, group: null, myRole: null, msg: fail(err, "Could not load group").msg };
+    return { success: false, group: null, myRole: null, isMuted: false, isFavorite: false, msg: fail(err, "Could not load group").msg };
   }
 };
 
@@ -266,6 +272,60 @@ export const removeGroupMessageReaction = async (groupId, messageId) => {
     return res.data;
   } catch (err) {
     return fail(err, "Could not remove reaction");
+  }
+};
+
+export const searchGroupMessages = async (groupId, query) => {
+  try {
+    const res = await api.get(`/api/ecosystem/groups/${groupId}/messages/search?q=${encodeURIComponent(query)}`);
+    return { success: true, results: res.data?.results || [] };
+  } catch (err) {
+    return { success: false, results: [], msg: fail(err, "Search failed").msg };
+  }
+};
+
+export const bulkDeleteForMe = async (groupId, messageIds) => {
+  try {
+    const res = await api.put(`/api/ecosystem/groups/${groupId}/messages/bulk-delete-me`, { messageIds });
+    return res.data;
+  } catch (err) {
+    return fail(err, "Could not delete messages");
+  }
+};
+
+export const bulkDeleteForAll = async (groupId, messageIds) => {
+  try {
+    const res = await api.put(`/api/ecosystem/groups/${groupId}/messages/bulk-delete-all`, { messageIds });
+    return res.data;
+  } catch (err) {
+    return fail(err, "Could not delete messages");
+  }
+};
+
+export const toggleMuteGroup = async (groupId, muted) => {
+  try {
+    const res = await api.put(`/api/ecosystem/groups/${groupId}/mute`, { muted });
+    return res.data;
+  } catch (err) {
+    return fail(err, "Could not update mute setting");
+  }
+};
+
+export const toggleFavoriteGroup = async (groupId, favorite) => {
+  try {
+    const res = await api.put(`/api/ecosystem/groups/${groupId}/favorite`, { favorite });
+    return res.data;
+  } catch (err) {
+    return fail(err, "Could not update favorite");
+  }
+};
+
+export const clearChatForMe = async (groupId) => {
+  try {
+    const res = await api.put(`/api/ecosystem/groups/${groupId}/messages/clear-for-me`);
+    return res.data;
+  } catch (err) {
+    return fail(err, "Could not clear chat");
   }
 };
 

@@ -39,9 +39,53 @@ function ReactionPicker({ onPick, onClose }) {
 }
 
 // ─── MessageBubble ──────────────────────────────────────────────────────────
-function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onReact, onRemoveReaction, myId, onReply, onImageClick, stickerMap }) {
+function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onReact, onRemoveReaction, myId, onReply, onImageClick, stickerMap, selectMode, isSelected, onToggleSelect }) {
   const [showActions, setShowActions] = useState(false);
   const [showReactPicker, setShowReactPicker] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const isSwipingRef = useRef(false);
+  const SWIPE_TRIGGER = 56; // px — is se zyada swipe karne pe reply trigger hoga
+  const SWIPE_MAX = 80;
+
+  // Mobile swipe-to-reply — WhatsApp jaisa: kisi bhi taraf thoda horizontal
+  // swipe karo, bubble follow karta hai, threshold cross hone pe reply set
+  // ho jaata hai (haptic-jaisa chhota bounce feedback).
+  const handleTouchStart = (e) => {
+    if (selectMode) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwipingRef.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    if (selectMode || touchStartX.current == null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+
+    // Vertical scroll ke saath conflict na ho — sirf clearly-horizontal
+    // swipe ko hi capture karo
+    if (!isSwipingRef.current) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      isSwipingRef.current = Math.abs(dx) > Math.abs(dy);
+      if (!isSwipingRef.current) return;
+    }
+
+    // Diminishing-return clamp — real swipe apps jaisa resistance feel
+    const clamped = Math.max(-SWIPE_MAX, Math.min(SWIPE_MAX, dx));
+    setSwipeX(clamped);
+  };
+
+  const handleTouchEnd = () => {
+    if (Math.abs(swipeX) >= SWIPE_TRIGGER) {
+      onReply(msg);
+      if (navigator.vibrate) navigator.vibrate(15); // supported Android browsers pe halka haptic
+    }
+    setSwipeX(0);
+    touchStartX.current = null;
+    isSwipingRef.current = false;
+  };
 
   if (msg.isDeletedForEveryone) {
     return (
@@ -53,8 +97,45 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
 
   const myReaction = msg.reactions?.find((r) => String(r.userId) === String(myId));
 
+  const replyPreviewLabel = (r) => {
+    if (!r) return "";
+    if (r.isDeletedForEveryone) return "Original message was deleted";
+    if (r.text) return r.text;
+    if (r.messageType === "sticker") return "🏷️ Sticker";
+    if (r.mediaType === "image") return "📷 Photo";
+    if (r.mediaType === "video") return "🎥 Video";
+    if (r.mediaType === "voice") return "🎤 Voice message";
+    if (r.mediaType === "file") return "📎 File";
+    return "Media";
+  };
+
   return (
-    <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2 group relative`}>
+    <div
+      className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2 group relative touch-pan-y ${selectMode ? "cursor-pointer" : ""}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onClick={() => { if (selectMode) onToggleSelect(msg._id); }}
+      style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? "transform 0.2s ease-out" : "none" }}
+    >
+      {selectMode && (
+        <div className={`flex items-center ${isMe ? "order-2 ml-2" : "mr-2"}`}>
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? "bg-brand-600 border-brand-600" : "border-gray-500"}`}>
+            {isSelected && <span className="text-white text-[10px]">✓</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Swipe-reveal reply icon (jis taraf swipe kiya usi taraf dikhta hai) */}
+      {swipeX !== 0 && (
+        <div
+          className="absolute top-1/2 -translate-y-1/2 text-brand-400"
+          style={{ [swipeX > 0 ? "left" : "right"]: -28, opacity: Math.min(Math.abs(swipeX) / SWIPE_TRIGGER, 1) }}
+        >
+          {Icon.reply}
+        </div>
+      )}
+
       <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
         {!isMe && msg.sender?.username && (
           <p className="text-[11px] text-brand-400 font-semibold ml-1 mb-0.5">{msg.sender.username}</p>
@@ -70,10 +151,13 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
 
           <div
             className={`rounded-2xl px-3.5 py-2 relative ${isMe ? "bg-brand-600 text-white" : "bg-white/[0.06] text-gray-100"}`}
-            onDoubleClick={() => setShowReactPicker(true)}
+            onDoubleClick={() => !selectMode && setShowReactPicker(true)}
           >
             {msg.replyTo && (
-              <div className="text-[11px] opacity-70 border-l-2 border-white/40 pl-2 mb-1 line-clamp-1">Replying to a message</div>
+              <div className="text-[11px] opacity-80 bg-black/15 rounded-lg border-l-2 border-white/50 pl-2 pr-2 py-1 mb-1.5">
+                <p className="font-semibold opacity-90">{msg.replyTo.senderName}</p>
+                <p className="line-clamp-1 opacity-75">{replyPreviewLabel(msg.replyTo)}</p>
+              </div>
             )}
 
             {msg.messageType === "sticker" && msg.stickerId && (
@@ -112,20 +196,22 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
             )}
           </div>
 
-          {/* Hover action row — reply / react / delete */}
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? "-left-24" : "-right-24"} hidden group-hover:flex items-center gap-1 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-1 shadow-lg`}>
-            <button type="button" onClick={() => onReply(msg)} className="p-1 text-gray-400 hover:text-white transition">{Icon.reply}</button>
-            <button
-              type="button"
-              onClick={() => (myReaction ? onRemoveReaction(msg._id) : setShowReactPicker(true))}
-              className="p-1 text-gray-400 hover:text-white transition text-sm"
-            >
-              {myReaction ? myReaction.emoji : "🙂"}
-            </button>
-            {(isMe || canDeleteAny) && (
-              <button type="button" onClick={() => setShowActions((s) => !s)} className="p-1 text-gray-400 hover:text-red-400 transition">{Icon.trash}</button>
-            )}
-          </div>
+          {/* Hover action row — reply / react / delete (hidden in select-mode) */}
+          {!selectMode && (
+            <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? "-left-24" : "-right-24"} hidden group-hover:flex items-center gap-1 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-1 shadow-lg`}>
+              <button type="button" onClick={() => onReply(msg)} className="p-1 text-gray-400 hover:text-white transition">{Icon.reply}</button>
+              <button
+                type="button"
+                onClick={() => (myReaction ? onRemoveReaction(msg._id) : setShowReactPicker(true))}
+                className="p-1 text-gray-400 hover:text-white transition text-sm"
+              >
+                {myReaction ? myReaction.emoji : "🙂"}
+              </button>
+              {(isMe || canDeleteAny) && (
+                <button type="button" onClick={() => setShowActions((s) => !s)} className="p-1 text-gray-400 hover:text-red-400 transition">{Icon.trash}</button>
+              )}
+            </div>
+          )}
 
           {showActions && (
             <div className={`absolute z-20 top-full mt-1 ${isMe ? "right-0" : "left-0"} bg-[#1c1c1e] border border-white/10 rounded-xl shadow-xl overflow-hidden text-xs whitespace-nowrap`}>
@@ -201,6 +287,110 @@ function StickerPicker({ stickers, onPick, onClose }) {
   );
 }
 
+// ─── ChatMenu (3-dot header menu — role-aware) ──────────────────────────
+// Spec (image-2 reference): sirf UI-scalable options rakhe hain —
+// Add Member, Group Info, Clear Chat (mine), Exit/Delete Group. "Search",
+// "Select messages", "Mute", "Disappearing messages", "Favorites",
+// "Add to list" abhi backend-heavy hain — skip kiya hai jab tak backend
+// support na ho, taaki dead/non-functional buttons UI me na dikhein.
+function ChatMenu({ isAdminOrCreator, isCreator, isMuted, isFavorite, onAddMember, onGroupInfo, onSearch, onSelectMessages, onToggleMute, onToggleFavorite, onClearChat, onExitOrDelete, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="absolute top-full right-0 mt-1 z-30 bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden min-w-[200px] text-sm max-h-[70vh] overflow-y-auto">
+      {isAdminOrCreator && (
+        <button type="button" onClick={() => { onAddMember(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+          {Icon.userPlus || Icon.friends} Add Member
+        </button>
+      )}
+      <button type="button" onClick={() => { onGroupInfo(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+        {Icon.info || "ℹ️"} Group Info
+      </button>
+      <button type="button" onClick={() => { onSearch(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+        {Icon.search || "🔍"} Search
+      </button>
+      <button type="button" onClick={() => { onSelectMessages(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+        {Icon.check || "☑️"} Select Messages
+      </button>
+      <button type="button" onClick={() => { onToggleMute(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+        {isMuted ? "🔔" : "🔕"} {isMuted ? "Unmute Notifications" : "Mute Notifications"}
+      </button>
+      <button type="button" onClick={() => { onToggleFavorite(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+        {isFavorite ? "⭐" : "☆"} {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+      </button>
+      <button type="button" onClick={() => { onClearChat(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition text-left">
+        {Icon.trash} Clear Chat
+      </button>
+      <div className="border-t border-white/10" />
+      <button type="button" onClick={() => { onExitOrDelete(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-red-400 transition text-left">
+        {Icon.back} {isCreator ? "Delete Group" : "Exit Group"}
+      </button>
+    </div>
+  );
+}
+
+// ─── SearchPanel ─────────────────────────────────────────────────────────
+function SearchPanel({ groupId, onClose, onJumpToResult }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!query.trim()) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      const res = await groupApi.searchGroupMessages(groupId, query.trim());
+      setResults(res.results || []);
+      setLoading(false);
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, groupId]);
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-navy-950 flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-navy-900/50 flex-shrink-0">
+        <button type="button" onClick={onClose} className="text-gray-400 hover:text-white transition">{Icon.back}</button>
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search in this chat..."
+          className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm outline-none focus:border-brand-500"
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {loading && <div className="flex justify-center py-8"><div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>}
+        {!loading && query.trim() && results.length === 0 && (
+          <p className="text-center text-gray-600 text-sm py-12">No messages found</p>
+        )}
+        <div className="space-y-2">
+          {results.map((r) => (
+            <button
+              key={r._id}
+              type="button"
+              onClick={() => onJumpToResult(r)}
+              className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] rounded-xl px-3 py-2.5 transition"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-xs font-semibold text-brand-400">@{r.sender?.username}</span>
+                <span className="text-[10px] text-gray-600">{fmtTime(r.createdAt)}</span>
+              </div>
+              <p className="text-sm text-gray-300 line-clamp-2">{r.text || `📎 ${r.messageType}`}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── AddMemberPicker ─────────────────────────────────────────────────────────
 function AddMemberPicker({ communityMembers, existingMemberIds, onAdd, onClose }) {
   const [query, setQuery] = useState("");
@@ -241,18 +431,19 @@ function AddMemberPicker({ communityMembers, existingMemberIds, onAdd, onClose }
 }
 
 // ─── GroupProfileModal (management — opens on avatar/name tap) ─────────────
-function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onUpdated, onLeftOrDeleted, showToast }) {
+function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onUpdated, onLeftOrDeleted, showToast, autoOpenAddPicker }) {
   const isAdmin = myRole === "creator" || myRole === "admin";
   const isCreator = myRole === "creator";
 
   const [members, setMembers] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [showAddPicker, setShowAddPicker] = useState(false);
+  const [showAddPicker, setShowAddPicker] = useState(!!autoOpenAddPicker);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || "");
   const [messagePermission, setMessagePermission] = useState(group.messagePermission || "all");
+  const [disappearingDuration, setDisappearingDuration] = useState(group.disappearingDuration || 0);
   const [busy, setBusy] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef(null);
@@ -288,7 +479,7 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
 
   const handleSaveEdit = async () => {
     setBusy(true);
-    const res = await groupApi.updateGroup(group._id, { name, description, messagePermission });
+    const res = await groupApi.updateGroup(group._id, { name, description, messagePermission, disappearingDuration });
     setBusy(false);
     if (res.success) {
       showToast("Group updated");
@@ -347,13 +538,14 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
   const existingMemberIds = new Set(members.map((m) => String(m.userId?._id)));
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#111] border border-white/10 rounded-3xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Group Info</h3>
-          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white">{Icon.x}</button>
-        </div>
+    <div className="fixed inset-0 z-[60] bg-navy-950 flex flex-col">
+      {/* Back-arrow header — full screen mobile-nav pattern, not a floating X */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-navy-900/50 flex-shrink-0">
+        <button type="button" onClick={onClose} className="text-gray-400 hover:text-white transition p-1 -ml-1">{Icon.back}</button>
+        <h3 className="text-base font-bold">Group Info</h3>
+      </div>
 
+      <div className="flex-1 overflow-y-auto px-5 py-5 max-w-lg w-full mx-auto">
         <div className="flex flex-col items-center text-center mb-5">
           <button
             type="button"
@@ -380,6 +572,15 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
                   <option value="admins_only">Only Admins</option>
                 </select>
               </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Disappearing messages</p>
+                <select value={disappearingDuration} onChange={(e) => setDisappearingDuration(Number(e.target.value))} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500">
+                  <option value={0}>Off</option>
+                  <option value={86400}>24 hours</option>
+                  <option value={604800}>7 days</option>
+                  <option value={7776000}>90 days</option>
+                </select>
+              </div>
               <div className="flex gap-2">
                 <button type="button" disabled={busy} onClick={handleSaveEdit} className="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50">{busy ? "Saving…" : "Save"}</button>
                 <button type="button" onClick={() => setEditing(false)} className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition">Cancel</button>
@@ -389,7 +590,7 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
             <>
               <h4 className="text-xl font-bold mt-3">{group.name}</h4>
               {group.description && <p className="text-gray-500 text-sm mt-1">{group.description}</p>}
-              <p className="text-xs text-gray-600 mt-2">{group.memberCount} / {group.maxMembers} members · {group.messagePermission === "admins_only" ? "Only admins can chat" : "Everyone can chat"}</p>
+              <p className="text-xs text-gray-600 mt-2">{group.memberCount} / {group.maxMembers} members · {group.messagePermission === "admins_only" ? "Only admins can chat" : "Everyone can chat"}{group.disappearingDuration ? " · ⏱ Disappearing on" : ""}</p>
               {isAdmin && (
                 <button type="button" onClick={() => setEditing(true)} className="mt-3 text-xs text-brand-400 hover:text-brand-300 font-semibold transition">Edit Group Info</button>
               )}
@@ -468,7 +669,6 @@ function GroupProfileModal({ group, myRole, myId, communityMembers, onClose, onU
     </div>
   );
 }
-
 // ─── MAIN: GroupChatPanel ───────────────────────────────────────────────────
 export default function GroupChatPanel({ group: initialGroup, myRole: initialMyRole, communityMembers = [], onClose, showToast: parentShowToast }) {
   const { user } = useContext(AuthContext);
@@ -481,6 +681,16 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   const [text, setText] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [autoOpenAddPicker, setAutoOpenAddPicker] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isMuted, setIsMuted] = useState(initialGroup.isMuted || false);
+  const [isFavorite, setIsFavorite] = useState(initialGroup.isFavorite || false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [onlineCount, setOnlineCount] = useState(0);
@@ -497,6 +707,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   const micStreamRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messageListRef = useRef(null);
   const typingTimer = useRef(null);
   const sendingRef = useRef(false); // double-send guard (see handleSend)
 
@@ -514,14 +725,18 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setPage(1);
+      setHasMore(true);
       const [msgRes, grpRes, onlineRes] = await Promise.all([
-        groupApi.getGroupMessages(group._id),
+        groupApi.getGroupMessages(group._id, 1),
         groupApi.getGroupById(group._id),
         groupApi.getOnlineGroupMembers(group._id),
       ]);
       if (cancelled) return;
-      setMessages((msgRes.messages || []).slice().reverse()); // service returns newest-first, we render oldest->newest
-      if (grpRes.success) { setGroup(grpRes.group); setMyRole(grpRes.myRole); }
+      const firstPage = msgRes.messages || [];
+      setMessages(firstPage.slice().reverse()); // service returns newest-first, we render oldest->newest
+      setHasMore(firstPage.length >= 50); // ek pura page mila -> aur purane messages ho sakte hain
+      if (grpRes.success) { setGroup(grpRes.group); setMyRole(grpRes.myRole); setIsMuted(grpRes.isMuted); setIsFavorite(grpRes.isFavorite); }
       setOnlineCount((onlineRes.members || []).filter((m) => m.isOnline).length);
       setLoading(false);
       groupApi.markGroupMessagesSeen(group._id);
@@ -530,11 +745,52 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group._id]);
 
+  // ── Infinite scroll — scroll-to-top pe purane messages load karo ───────
+  // Scroll position preserve karte hain (naya content upar prepend hone se
+  // viewport "jump" na kare — scrollHeight ka difference measure karke
+  // scrollTop adjust karte hain).
+  const loadMoreMessages = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    const container = messageListRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const res = await groupApi.getGroupMessages(group._id, nextPage);
+    const older = (res.messages || []).slice().reverse();
+
+    if (older.length > 0) {
+      isPrependingRef.current = true;
+      setMessages((prev) => [...older, ...prev]);
+      setPage(nextPage);
+    }
+    setHasMore(older.length >= 50);
+    setLoadingMore(false);
+
+    // DOM update ke baad scroll position restore karo
+    requestAnimationFrame(() => {
+      if (container) {
+        const newScrollHeight = container.scrollHeight;
+        container.scrollTop = newScrollHeight - prevScrollHeight;
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group._id, page, hasMore, loadingMore]);
+
+  const handleMessageListScroll = (e) => {
+    if (e.target.scrollTop < 80) loadMoreMessages();
+  };
+
   useEffect(() => {
     groupApi.getStickerPack().then(setStickerPack);
   }, []);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  const isPrependingRef = useRef(false);
+
+  useEffect(() => {
+    if (isPrependingRef.current) { isPrependingRef.current = false; return; }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // ── Socket real-time ──────────────────────────────────────────────────
   useEffect(() => {
@@ -718,6 +974,97 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     if (!res.success) showToast(res.msg || "Could not send sticker", "error");
   };
 
+  const handleClearChat = async () => {
+    if (!window.confirm("Clear all messages? This only clears the chat for you — others will still see it.")) return;
+    const res = await groupApi.clearChatForMe(group._id);
+    if (res.success) {
+      setMessages([]);
+      setHasMore(false);
+      showToast("Chat cleared");
+    } else {
+      showToast(res.msg || "Could not clear chat", "error");
+    }
+  };
+
+  const handleExitOrDeleteFromMenu = async () => {
+    if (isAdminOrCreator && myRole === "creator") {
+      if (!window.confirm(`Delete "${group.name}" permanently? This removes all chats and media for everyone.`)) return;
+      const res = await groupApi.deleteGroup(group._id);
+      if (res.success) { showToast("Group deleted"); onClose(); }
+      else showToast(res.msg || "Could not delete group", "error");
+    } else {
+      if (!window.confirm(`Leave "${group.name}"?`)) return;
+      const res = await groupApi.leaveGroup(group._id);
+      if (res.success) { showToast("Left group"); onClose(); }
+      else showToast(res.msg || "Could not leave group", "error");
+    }
+  };
+
+  // ── Select-messages mode (bulk delete) ────────────────────────────────
+  const handleToggleSelect = (messageId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+  const handleBulkDeleteMe = async () => {
+    if (selectedIds.size === 0) return;
+    const ids = [...selectedIds];
+    const res = await groupApi.bulkDeleteForMe(group._id, ids);
+    if (res.success) {
+      setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
+      showToast(`${res.deletedCount} message(s) deleted`);
+      exitSelectMode();
+    } else {
+      showToast(res.msg || "Could not delete messages", "error");
+    }
+  };
+
+  const handleBulkDeleteAll = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} message(s) for everyone?`)) return;
+    const ids = [...selectedIds];
+    const res = await groupApi.bulkDeleteForAll(group._id, ids);
+    if (res.success) {
+      showToast(`${res.deletedCount} deleted${res.skippedCount ? `, ${res.skippedCount} skipped (not yours)` : ""}`);
+      exitSelectMode();
+    } else {
+      showToast(res.msg || "Could not delete messages", "error");
+    }
+  };
+
+  const handleToggleMute = async () => {
+    const next = !isMuted;
+    setIsMuted(next); // optimistic
+    const res = await groupApi.toggleMuteGroup(group._id, next);
+    if (!res.success) { setIsMuted(!next); showToast(res.msg || "Could not update", "error"); }
+    else showToast(next ? "Notifications muted" : "Notifications unmuted");
+  };
+
+  const handleToggleFavorite = async () => {
+    const next = !isFavorite;
+    setIsFavorite(next); // optimistic
+    const res = await groupApi.toggleFavoriteGroup(group._id, next);
+    if (!res.success) { setIsFavorite(!next); showToast(res.msg || "Could not update", "error"); }
+    else showToast(next ? "Added to favorites" : "Removed from favorites");
+  };
+
+  // NOTE (simplification): jump-to-exact-message on scroll requires knowing
+  // which page an arbitrary older message falls on, which the current
+  // pagination model doesn't expose cheaply. For now a search-result tap
+  // just closes search — full jump-and-highlight is a natural follow-up
+  // if/when it's worth the extra backend work (e.g. a "messages around ID"
+  // endpoint).
+  const handleJumpToResult = () => {
+    setShowSearch(false);
+    showToast("Scroll up to find older messages");
+  };
+
   const handleDeleteMe = async (messageId) => {
     const res = await groupApi.deleteGroupMessageForMe(group._id, messageId);
     if (res.success) setMessages((prev) => prev.filter((m) => m._id !== messageId));
@@ -744,7 +1091,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
       {localToast && <div className={`fixed top-4 right-4 z-[200] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg ${localToast.type === "error" ? "bg-red-600" : "bg-green-600"} text-white`}>{localToast.msg}</div>}
 
       {/* Header — tapping avatar/name opens Group Info (management) */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-navy-900/50 flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-navy-900/50 flex-shrink-0 relative">
         <button type="button" onClick={onClose} className="text-gray-400 hover:text-white transition">{Icon.back}</button>
         <button type="button" onClick={() => setShowProfile(true)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
           <div className="w-10 h-10 rounded-xl overflow-hidden bg-brand-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -757,10 +1104,26 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
             </p>
           </div>
         </button>
+
+        <button type="button" onClick={() => setShowChatMenu((s) => !s)} className="p-2 text-gray-400 hover:text-white transition flex-shrink-0">{Icon.more || "⋮"}</button>
+        {showChatMenu && (
+          <ChatMenu
+            isAdminOrCreator={isAdminOrCreator}
+            isCreator={myRole === "creator"}
+            onAddMember={() => { setAutoOpenAddPicker(true); setShowProfile(true); }}
+            onGroupInfo={() => { setAutoOpenAddPicker(false); setShowProfile(true); }}
+            onClearChat={handleClearChat}
+            onExitOrDelete={handleExitOrDeleteFromMenu}
+            onClose={() => setShowChatMenu(false)}
+          />
+        )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div ref={messageListRef} onScroll={handleMessageListScroll} className="flex-1 overflow-y-auto px-4 py-4">
+        {loadingMore && (
+          <div className="flex justify-center py-2"><div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
+        )}
         {loading ? (
           <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : messages.length === 0 ? (
@@ -846,7 +1209,8 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
           myRole={myRole}
           myId={myId}
           communityMembers={communityMembers}
-          onClose={() => setShowProfile(false)}
+          autoOpenAddPicker={autoOpenAddPicker}
+          onClose={() => { setShowProfile(false); setAutoOpenAddPicker(false); }}
           onUpdated={(updatedGroup) => setGroup(updatedGroup)}
           onLeftOrDeleted={() => { setShowProfile(false); onClose(); }}
           showToast={showToast}
