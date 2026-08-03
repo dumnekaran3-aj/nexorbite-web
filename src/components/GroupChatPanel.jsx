@@ -21,6 +21,59 @@ const fmtDuration = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
+// Sticker tap-animation — emotion-matched movement (spec: "stickers ko touch
+// karne ke bad unique movement do emoji-emotion se matched"). Har animation
+// CSS keyframe se driven hai (neeche <StickerAnimStyles/> me define hain),
+// class temporarily lagti hai tap pe, khatam hone pe apne aap hat jaati hai.
+const STICKER_ANIMATIONS = {
+  sticker_wave:     "anim-wave",
+  sticker_thumbsup: "anim-bounce",
+  sticker_laugh:    "anim-shake",
+  sticker_heart:    "anim-heartbeat",
+  sticker_fire:     "anim-flicker",
+  sticker_clap:     "anim-clap",
+  sticker_party:    "anim-pop",
+  sticker_love:     "anim-heartbeat",
+  sticker_shock:    "anim-jitter",
+  sticker_cool:     "anim-tilt",
+  sticker_cry:      "anim-wobble",
+  sticker_think:    "anim-tilt-slow",
+};
+
+// Ek hi baar poore document me inject hota hai (StickerAnimStyles ko main
+// component me ek baar render karo). Plain <style> tag — koi extra library
+// nahi chahiye Vite/CRA me isse kaam chalane ke liye.
+function StickerAnimStyles() {
+  return (
+    <style>{`
+      @keyframes anim-wave     { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-18deg)} 40%{transform:rotate(14deg)} 60%{transform:rotate(-10deg)} 80%{transform:rotate(6deg)} }
+      @keyframes anim-bounce   { 0%,100%{transform:translateY(0) scale(1)} 30%{transform:translateY(-14px) scale(1.08)} 55%{transform:translateY(0) scale(0.96)} 75%{transform:translateY(-5px)} }
+      @keyframes anim-shake    { 0%,100%{transform:translateX(0) rotate(0)} 15%{transform:translateX(-6px) rotate(-6deg)} 30%{transform:translateX(6px) rotate(6deg)} 45%{transform:translateX(-6px) rotate(-4deg)} 60%{transform:translateX(6px) rotate(4deg)} 80%{transform:translateX(-2px)} }
+      @keyframes anim-heartbeat{ 0%,100%{transform:scale(1)} 15%{transform:scale(1.3)} 30%{transform:scale(1)} 45%{transform:scale(1.25)} 60%{transform:scale(1)} }
+      @keyframes anim-flicker  { 0%,100%{transform:scale(1) rotate(0)} 20%{transform:scale(1.1) rotate(-4deg)} 40%{transform:scale(0.95) rotate(3deg)} 60%{transform:scale(1.08) rotate(-2deg)} 80%{transform:scale(0.98) rotate(2deg)} }
+      @keyframes anim-clap     { 0%,100%{transform:scale(1) rotate(0)} 25%{transform:scale(1.2) rotate(-8deg)} 50%{transform:scale(1) rotate(8deg)} 75%{transform:scale(1.15) rotate(-4deg)} }
+      @keyframes anim-pop      { 0%{transform:scale(1) rotate(0)} 40%{transform:scale(1.35) rotate(10deg)} 70%{transform:scale(0.95) rotate(-6deg)} 100%{transform:scale(1) rotate(0)} }
+      @keyframes anim-jitter   { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-3px,-3px)} 40%{transform:translate(3px,3px)} 60%{transform:translate(-3px,2px)} 80%{transform:translate(2px,-2px)} }
+      @keyframes anim-tilt     { 0%,100%{transform:rotate(0) scale(1)} 30%{transform:rotate(-10deg) scale(1.1)} 60%{transform:rotate(6deg) scale(1.05)} }
+      @keyframes anim-wobble   { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 50%{transform:rotate(0)} 75%{transform:rotate(8deg)} }
+      @keyframes anim-tilt-slow{ 0%,100%{transform:rotate(0)} 50%{transform:rotate(-10deg)} }
+      .anim-wave      { animation: anim-wave 0.7s ease-in-out; }
+      .anim-bounce    { animation: anim-bounce 0.6s ease-in-out; }
+      .anim-shake     { animation: anim-shake 0.6s ease-in-out; }
+      .anim-heartbeat { animation: anim-heartbeat 0.7s ease-in-out; }
+      .anim-flicker   { animation: anim-flicker 0.6s ease-in-out; }
+      .anim-clap      { animation: anim-clap 0.6s ease-in-out; }
+      .anim-pop       { animation: anim-pop 0.5s ease-out; }
+      .anim-jitter    { animation: anim-jitter 0.5s ease-in-out; }
+      .anim-tilt      { animation: anim-tilt 0.6s ease-in-out; }
+      .anim-wobble    { animation: anim-wobble 0.7s ease-in-out; }
+      .anim-tilt-slow { animation: anim-tilt-slow 0.8s ease-in-out; }
+      .msg-highlight-flash { animation: msg-flash 1.6s ease-out; }
+      @keyframes msg-flash { 0%,15%{background-color:rgba(124,58,237,0.35)} 100%{background-color:transparent} }
+    `}</style>
+  );
+}
+
 // ─── EmojiReactionBar ───────────────────────────────────────────────────────
 function ReactionPicker({ onPick, onClose }) {
   const ref = useRef(null);
@@ -38,25 +91,66 @@ function ReactionPicker({ onPick, onClose }) {
   );
 }
 
+// ─── WhatsAppActionMenu (long-press context menu) ────────────────────────
+function WhatsAppActionMenu({ isMe, canDeleteAny, myReaction, anchorSide, onReact, onReply, onDeleteMe, onDeleteAll, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", h);
+    document.addEventListener("touchstart", h);
+    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      className={`absolute z-40 top-0 ${anchorSide === "me" ? "right-0" : "left-0"} bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden min-w-[190px] text-sm`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-center gap-2 px-3 py-2.5 border-b border-white/10">
+        {REACTION_EMOJIS.map((em) => (
+          <button key={em} type="button" onClick={() => { onReact(em); onClose(); }} className={`text-xl hover:scale-125 transition leading-none ${myReaction === em ? "scale-125" : ""}`}>{em}</button>
+        ))}
+      </div>
+      <button type="button" onClick={() => { onReply(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition text-left">{Icon.reply} Reply</button>
+      <button type="button" onClick={() => { onDeleteMe(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition text-left">{Icon.trash} Delete for me</button>
+      {(isMe || canDeleteAny) && (
+        <button type="button" onClick={() => { onDeleteAll(); onClose(); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 text-red-400 transition text-left">{Icon.trash} Delete for everyone</button>
+      )}
+    </div>
+  );
+}
+
 // ─── MessageBubble ──────────────────────────────────────────────────────────
-function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onReact, onRemoveReaction, myId, onReply, onImageClick, stickerMap, selectMode, isSelected, onToggleSelect }) {
-  const [showActions, setShowActions] = useState(false);
-  const [showReactPicker, setShowReactPicker] = useState(false);
+function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onReact, onRemoveReaction, myId, onReply, onImageClick, onVideoClick, stickerMap, selectMode, isSelected, onToggleSelect, onJumpToReply, highlighted }) {
+  const [showMenu, setShowMenu] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
+  const [stickerAnim, setStickerAnim] = useState(false);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const isSwipingRef = useRef(false);
-  const SWIPE_TRIGGER = 56; // px — is se zyada swipe karne pe reply trigger hoga
+  const longPressTimer = useRef(null);
+  const longPressFiredRef = useRef(false);
+  const SWIPE_TRIGGER = 56;
   const SWIPE_MAX = 80;
+  const LONG_PRESS_MS = 450;
 
-  // Mobile swipe-to-reply — WhatsApp jaisa: kisi bhi taraf thoda horizontal
-  // swipe karo, bubble follow karta hai, threshold cross hone pe reply set
-  // ho jaata hai (haptic-jaisa chhota bounce feedback).
+  // ── Swipe-to-reply + long-press-to-open-menu, dono ek hi touch se
+  // handle karte hain (WhatsApp jaisa): finger horizontal move kare to
+  // swipe-reply, static rakhe to long-press menu khule.
   const handleTouchStart = (e) => {
     if (selectMode) return;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     isSwipingRef.current = false;
+    longPressFiredRef.current = false;
+    longPressTimer.current = setTimeout(() => {
+      if (!isSwipingRef.current) {
+        longPressFiredRef.current = true;
+        setShowMenu(true);
+        if (navigator.vibrate) navigator.vibrate(20);
+      }
+    }, LONG_PRESS_MS);
   };
 
   const handleTouchMove = (e) => {
@@ -64,44 +158,76 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
     const dx = e.touches[0].clientX - touchStartX.current;
     const dy = e.touches[0].clientY - touchStartY.current;
 
-    // Vertical scroll ke saath conflict na ho — sirf clearly-horizontal
-    // swipe ko hi capture karo
     if (!isSwipingRef.current) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       isSwipingRef.current = Math.abs(dx) > Math.abs(dy);
+      if (isSwipingRef.current) clearTimeout(longPressTimer.current); // swipe shuru -> long-press cancel
       if (!isSwipingRef.current) return;
     }
 
-    // Diminishing-return clamp — real swipe apps jaisa resistance feel
     const clamped = Math.max(-SWIPE_MAX, Math.min(SWIPE_MAX, dx));
     setSwipeX(clamped);
   };
 
   const handleTouchEnd = () => {
+    clearTimeout(longPressTimer.current);
     if (Math.abs(swipeX) >= SWIPE_TRIGGER) {
       onReply(msg);
-      if (navigator.vibrate) navigator.vibrate(15); // supported Android browsers pe halka haptic
+      if (navigator.vibrate) navigator.vibrate(15);
     }
     setSwipeX(0);
     touchStartX.current = null;
     isSwipingRef.current = false;
   };
 
+  // Desktop: click-and-hold (mouse) bhi long-press jaisa kaam kare
+  const handleMouseDown = () => {
+    if (selectMode) return;
+    longPressFiredRef.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      setShowMenu(true);
+    }, LONG_PRESS_MS);
+  };
+  const handleMouseUp = () => clearTimeout(longPressTimer.current);
+
+  const handleBubbleClick = () => {
+    if (selectMode) { onToggleSelect(msg._id); return; }
+    if (longPressFiredRef.current) { longPressFiredRef.current = false; return; } // long-press ke baad click suppress
+  };
+
+  const handleStickerTap = () => {
+    if (selectMode) { onToggleSelect(msg._id); return; }
+    setStickerAnim(false);
+    requestAnimationFrame(() => setStickerAnim(true));
+  };
+
   if (msg.isDeletedForEveryone) {
     return (
-      <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2`}>
+      <div id={`msg-${msg._id}`} className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2`}>
         <div className="italic text-xs text-gray-500 bg-white/[0.03] px-3 py-2 rounded-2xl">This message was deleted</div>
       </div>
     );
   }
 
   const myReaction = msg.reactions?.find((r) => String(r.userId) === String(myId));
+  const isPureMedia = (msg.mediaType === "image" || msg.mediaType === "video") && !msg.text;
+  const isSticker = msg.messageType === "sticker" && msg.stickerId;
+  const animClass = STICKER_ANIMATIONS[msg.stickerId] || "anim-pop";
+
+  const replyThumb = (r) => {
+    if (!r) return null;
+    if (r.messageType === "sticker" && r.stickerId) return <span className="text-xl leading-none">{stickerMap[r.stickerId] || "🏷️"}</span>;
+    if (r.mediaType === "image" && r.mediaUrl) return <img src={r.mediaUrl} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0" />;
+    if (r.mediaType === "video" && r.mediaUrl) return <video src={r.mediaUrl} className="w-9 h-9 rounded object-cover flex-shrink-0" />;
+    return null;
+  };
 
   const replyPreviewLabel = (r) => {
     if (!r) return "";
     if (r.isDeletedForEveryone) return "Original message was deleted";
     if (r.text) return r.text;
-    if (r.messageType === "sticker") return "🏷️ Sticker";
+    if (r.messageType === "sticker") return "Sticker";
     if (r.mediaType === "image") return "📷 Photo";
     if (r.mediaType === "video") return "🎥 Video";
     if (r.mediaType === "voice") return "🎤 Voice message";
@@ -109,13 +235,26 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
     return "Media";
   };
 
+  // Timestamp+ticks pill — media/sticker pe overlay (semi-transparent dark
+  // pill), text-bubble ke andar inline (WhatsApp jaisa dono jagah alag style)
+  const TimePill = ({ overlay }) => (
+    <span className={`flex items-center gap-1 ${overlay ? "bg-black/45 backdrop-blur-sm rounded-full px-2 py-0.5" : ""}`}>
+      <span className={`text-[10.5px] ${overlay ? "text-white/90" : "opacity-60"}`}>{fmtTime(msg.createdAt)}</span>
+      {isMe && msg.seenBy?.length > 1 && <span className={overlay ? "text-white/90" : "opacity-80"}>{Icon.seendbl}</span>}
+    </span>
+  );
+
   return (
     <div
-      className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2 group relative touch-pan-y ${selectMode ? "cursor-pointer" : ""}`}
+      id={`msg-${msg._id}`}
+      className={`flex ${isMe ? "justify-end" : "justify-start"} ${msg.reactions?.length > 0 ? "mb-4" : "mb-2"} group relative touch-pan-y ${selectMode ? "cursor-pointer" : ""} ${highlighted ? "msg-highlight-flash rounded-2xl" : ""}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onClick={() => { if (selectMode) onToggleSelect(msg._id); }}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onClick={handleBubbleClick}
       style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? "transform 0.2s ease-out" : "none" }}
     >
       {selectMode && (
@@ -126,7 +265,6 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
         </div>
       )}
 
-      {/* Swipe-reveal reply icon (jis taraf swipe kiya usi taraf dikhta hai) */}
       {swipeX !== 0 && (
         <div
           className="absolute top-1/2 -translate-y-1/2 text-brand-400"
@@ -137,87 +275,138 @@ function MessageBubble({ msg, isMe, canDeleteAny, onDeleteMe, onDeleteAll, onRea
       )}
 
       <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
-        {!isMe && msg.sender?.username && (
-          <p className="text-[11px] text-brand-400 font-semibold ml-1 mb-0.5">{msg.sender.username}</p>
+        {!isMe && msg.sender?.username && !isSticker && (
+          <p className="text-xs text-brand-400 font-semibold ml-1 mb-0.5">{msg.sender.username}</p>
         )}
 
         <div className="relative">
-          {showReactPicker && (
-            <ReactionPicker
-              onClose={() => setShowReactPicker(false)}
-              onPick={(emoji) => { onReact(msg._id, emoji); setShowReactPicker(false); }}
+          {showMenu && (
+            <WhatsAppActionMenu
+              isMe={isMe}
+              canDeleteAny={canDeleteAny}
+              myReaction={myReaction?.emoji}
+              anchorSide={isMe ? "me" : "other"}
+              onReact={(emoji) => onReact(msg._id, emoji)}
+              onReply={() => onReply(msg)}
+              onDeleteMe={() => onDeleteMe(msg._id)}
+              onDeleteAll={() => onDeleteAll(msg._id)}
+              onClose={() => setShowMenu(false)}
             />
           )}
 
-          <div
-            className={`rounded-2xl px-3.5 py-2 relative ${isMe ? "bg-brand-600 text-white" : "bg-white/[0.06] text-gray-100"}`}
-            onDoubleClick={() => !selectMode && setShowReactPicker(true)}
-          >
-            {msg.replyTo && (
-              <div className="text-[11px] opacity-80 bg-black/15 rounded-lg border-l-2 border-white/50 pl-2 pr-2 py-1 mb-1.5">
-                <p className="font-semibold opacity-90">{msg.replyTo.senderName}</p>
-                <p className="line-clamp-1 opacity-75">{replyPreviewLabel(msg.replyTo)}</p>
+          {/* ── STICKER: no bubble background, big, tap-to-animate ── */}
+          {isSticker ? (
+            <div className="flex flex-col items-start">
+              {!isMe && msg.sender?.username && (
+                <p className="text-xs text-brand-400 font-semibold ml-1 mb-0.5">{msg.sender.username}</p>
+              )}
+              <div
+                onClick={handleStickerTap}
+                className={`text-[84px] leading-none cursor-pointer select-none ${stickerAnim ? animClass : ""}`}
+                onAnimationEnd={() => setStickerAnim(false)}
+              >
+                {stickerMap[msg.stickerId] || "🏷️"}
               </div>
-            )}
-
-            {msg.messageType === "sticker" && msg.stickerId && (
-              <p className="text-5xl leading-none">{stickerMap[msg.stickerId] || "🏷️"}</p>
-            )}
-
-            {msg.mediaType === "image" && msg.mediaUrl && (
-              <img src={msg.mediaUrl} alt="" onClick={() => onImageClick(msg.mediaUrl)} className="rounded-xl max-w-full max-h-64 object-cover cursor-zoom-in mb-1" />
-            )}
-            {msg.mediaType === "video" && msg.mediaUrl && (
-              <video src={msg.mediaUrl} controls className="rounded-xl max-w-full max-h-64 mb-1" />
-            )}
-            {msg.mediaType === "voice" && msg.mediaUrl && (
-              <audio src={msg.mediaUrl} controls className="max-w-full mb-1" />
-            )}
-            {msg.mediaType === "file" && msg.mediaUrl && (
-              <a href={msg.mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-black/20 rounded-xl px-3 py-2 mb-1 hover:bg-black/30 transition">
-                {Icon.file}
-                <span className="text-xs truncate flex-1">{msg.fileName}</span>
-                <span className="text-[10px] opacity-70">{fmtSize(msg.fileSize || 0)}</span>
-              </a>
-            )}
-
-            {msg.text && <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>}
-
-            <div className="flex items-center gap-1 justify-end mt-0.5">
-              <span className="text-[10px] opacity-60">{fmtTime(msg.createdAt)}</span>
-              {isMe && msg.seenBy?.length > 1 && <span className="opacity-80">{Icon.seendbl}</span>}
+              <div className="ml-1 mt-0.5"><TimePill overlay={false} /></div>
             </div>
+          ) : isPureMedia ? (
+            /* ── PURE IMAGE/VIDEO (no caption): full-bleed, rounded, time overlay ── */
+            <div className="relative rounded-2xl overflow-hidden max-w-[260px]">
+              {msg.replyTo && (
+                <button type="button" onClick={() => onJumpToReply(msg.replyTo._id)} className="w-full flex items-center gap-2 text-[11px] opacity-90 bg-black/30 border-l-2 border-white/50 pl-2 pr-2 py-1 text-left">
+                  {replyThumb(msg.replyTo)}
+                  <span className="min-w-0">
+                    <p className="font-semibold truncate">{msg.replyTo.senderName}</p>
+                    <p className="line-clamp-1 opacity-75">{replyPreviewLabel(msg.replyTo)}</p>
+                  </span>
+                </button>
+              )}
+              {msg.mediaType === "image" && (
+                <img src={msg.mediaUrl} alt="" onClick={() => onImageClick(msg.mediaUrl)} className="block w-full max-h-80 object-cover cursor-zoom-in" />
+              )}
+              {msg.mediaType === "video" && (
+                <div className="relative cursor-pointer" onClick={() => onVideoClick(msg.mediaUrl)}>
+                  <video src={msg.mediaUrl} className="block w-full max-h-80 object-cover pointer-events-none" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
+                      <div className="w-0 h-0 border-y-[9px] border-y-transparent border-l-[15px] border-l-white ml-1" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="absolute bottom-1.5 right-1.5"><TimePill overlay /></div>
+              {msg.reactions?.length > 0 && (
+                <div className="absolute -bottom-3 right-2 z-10 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-0.5 flex gap-0.5 shadow">
+                  {msg.reactions.slice(0, 3).map((r, i) => <span key={i} className="text-xs">{r.emoji}</span>)}
+                  {msg.reactions.length > 3 && <span className="text-[10px] text-gray-400">+{msg.reactions.length - 3}</span>}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* ── TEXT / VOICE / FILE / media-with-caption: normal bubble ── */
+            <div className={`rounded-2xl px-3.5 py-2 relative ${isMe ? "bg-brand-600 text-white" : "bg-white/[0.06] text-gray-100"}`}>
+              {msg.replyTo && (
+                <button type="button" onClick={() => onJumpToReply(msg.replyTo._id)} className="w-full flex items-center gap-2 text-[11px] opacity-90 bg-black/15 rounded-lg border-l-2 border-white/50 pl-2 pr-2 py-1 mb-1.5 text-left">
+                  {replyThumb(msg.replyTo)}
+                  <span className="min-w-0">
+                    <p className="font-semibold opacity-90 truncate">{msg.replyTo.senderName}</p>
+                    <p className="line-clamp-1 opacity-75">{replyPreviewLabel(msg.replyTo)}</p>
+                  </span>
+                </button>
+              )}
 
-            {msg.reactions?.length > 0 && (
-              <div className="absolute -bottom-3 right-2 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-0.5 flex gap-0.5 shadow">
-                {msg.reactions.slice(0, 3).map((r, i) => <span key={i} className="text-xs">{r.emoji}</span>)}
-                {msg.reactions.length > 3 && <span className="text-[10px] text-gray-400">+{msg.reactions.length - 3}</span>}
+              {msg.mediaType === "image" && msg.mediaUrl && (
+                <img src={msg.mediaUrl} alt="" onClick={() => onImageClick(msg.mediaUrl)} className="rounded-xl max-w-full max-h-64 object-cover cursor-zoom-in mb-1.5 -mx-0.5" />
+              )}
+              {msg.mediaType === "video" && msg.mediaUrl && (
+                <div className="relative cursor-pointer mb-1.5" onClick={() => onVideoClick(msg.mediaUrl)}>
+                  <video src={msg.mediaUrl} className="rounded-xl max-w-full max-h-64 object-cover pointer-events-none" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-11 h-11 rounded-full bg-black/50 flex items-center justify-center">
+                      <div className="w-0 h-0 border-y-[8px] border-y-transparent border-l-[13px] border-l-white ml-1" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {msg.mediaType === "voice" && msg.mediaUrl && (
+                <audio src={msg.mediaUrl} controls className="max-w-full mb-1.5 h-10" style={{ minWidth: 220 }} />
+              )}
+              {msg.mediaType === "file" && msg.mediaUrl && (
+                <a href={msg.mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-black/20 rounded-xl px-3 py-2 mb-1.5 hover:bg-black/30 transition">
+                  {Icon.file}
+                  <span className="text-sm truncate flex-1">{msg.fileName}</span>
+                  <span className="text-[11px] opacity-70">{fmtSize(msg.fileSize || 0)}</span>
+                </a>
+              )}
+
+              {msg.text && <p className="text-[15px] leading-snug whitespace-pre-wrap break-words">{msg.text}</p>}
+
+              <div className="flex items-center justify-end mt-0.5">
+                <TimePill overlay={false} />
               </div>
-            )}
-          </div>
 
-          {/* Hover action row — reply / react / delete (hidden in select-mode) */}
-          {!selectMode && (
-            <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? "-left-24" : "-right-24"} hidden group-hover:flex items-center gap-1 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-1 shadow-lg`}>
+              {msg.reactions?.length > 0 && (
+                <div className="absolute -bottom-3 right-2 z-10 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-0.5 flex gap-0.5 shadow">
+                  {msg.reactions.slice(0, 3).map((r, i) => <span key={i} className="text-xs">{r.emoji}</span>)}
+                  {msg.reactions.length > 3 && <span className="text-[10px] text-gray-400">+{msg.reactions.length - 3}</span>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Desktop hover quick-actions (reply/react/delete) — long-press bhi kaam karta hai, ye sirf mouse-users ke liye extra convenience */}
+          {!selectMode && !isSticker && (
+            <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? "-left-24" : "-right-24"} hidden group-hover:md:flex items-center gap-1 bg-[#1c1c1e] border border-white/10 rounded-full px-1.5 py-1 shadow-lg`}>
               <button type="button" onClick={() => onReply(msg)} className="p-1 text-gray-400 hover:text-white transition">{Icon.reply}</button>
               <button
                 type="button"
-                onClick={() => (myReaction ? onRemoveReaction(msg._id) : setShowReactPicker(true))}
+                onClick={() => (myReaction ? onRemoveReaction(msg._id) : setShowMenu(true))}
                 className="p-1 text-gray-400 hover:text-white transition text-sm"
               >
                 {myReaction ? myReaction.emoji : "🙂"}
               </button>
               {(isMe || canDeleteAny) && (
-                <button type="button" onClick={() => setShowActions((s) => !s)} className="p-1 text-gray-400 hover:text-red-400 transition">{Icon.trash}</button>
-              )}
-            </div>
-          )}
-
-          {showActions && (
-            <div className={`absolute z-20 top-full mt-1 ${isMe ? "right-0" : "left-0"} bg-[#1c1c1e] border border-white/10 rounded-xl shadow-xl overflow-hidden text-xs whitespace-nowrap`}>
-              <button type="button" onClick={() => { onDeleteMe(msg._id); setShowActions(false); }} className="block w-full text-left px-3 py-2 hover:bg-white/10 transition">Delete for me</button>
-              {(isMe || canDeleteAny) && (
-                <button type="button" onClick={() => { onDeleteAll(msg._id); setShowActions(false); }} className="block w-full text-left px-3 py-2 hover:bg-white/10 text-red-400 transition">Delete for everyone</button>
+                <button type="button" onClick={() => setShowMenu(true)} className="p-1 text-gray-400 hover:text-red-400 transition">{Icon.trash}</button>
               )}
             </div>
           )}
@@ -692,6 +881,37 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const [enlargedVideo, setEnlargedVideo] = useState(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [chatZoom, setChatZoom] = useState(1);
+  const pinchStartDistRef = useRef(null);
+  const pinchStartZoomRef = useRef(1);
+
+  const getTouchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  // "Chatpage ko hi zoom in/out karne ka option do" — do-ungli pinch se
+  // poore message-area ka zoom badhta/ghatata hai (0.8x - 1.8x clamp).
+  const handlePinchStart = (e) => {
+    if (e.touches.length === 2) {
+      pinchStartDistRef.current = getTouchDistance(e.touches);
+      pinchStartZoomRef.current = chatZoom;
+    }
+  };
+  const handlePinchMove = (e) => {
+    if (e.touches.length === 2 && pinchStartDistRef.current) {
+      const newDist = getTouchDistance(e.touches);
+      const ratio = newDist / pinchStartDistRef.current;
+      const next = Math.max(0.8, Math.min(1.8, pinchStartZoomRef.current * ratio));
+      setChatZoom(next);
+    }
+  };
+  const handlePinchEnd = (e) => {
+    if (e.touches.length < 2) pinchStartDistRef.current = null;
+  };
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [onlineCount, setOnlineCount] = useState(0);
   const [localToast, setLocalToast] = useState(null);
@@ -1054,16 +1274,54 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     else showToast(next ? "Added to favorites" : "Removed from favorites");
   };
 
-  // NOTE (simplification): jump-to-exact-message on scroll requires knowing
-  // which page an arbitrary older message falls on, which the current
-  // pagination model doesn't expose cheaply. For now a search-result tap
-  // just closes search — full jump-and-highlight is a natural follow-up
-  // if/when it's worth the extra backend work (e.g. a "messages around ID"
-  // endpoint).
-  const handleJumpToResult = () => {
-    setShowSearch(false);
-    showToast("Scroll up to find older messages");
+  // Real jump-to-message: agar target already loaded hai to seedha scroll +
+  // highlight-flash; agar nahi hai to purane pages progressively load karte
+  // hain (max 8 tries) jab tak mil na jaye ya server pe aur na bache.
+  const jumpToMessageId = async (targetId) => {
+    let el = document.getElementById(`msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedMessageId(targetId);
+      setTimeout(() => setHighlightedMessageId(null), 1600);
+      return;
+    }
+
+    let currentPage = page;
+    let moreAvailable = hasMore;
+    const container = messageListRef.current;
+    let found = false;
+
+    for (let attempt = 0; attempt < 8 && !found && moreAvailable; attempt++) {
+      const prevScrollHeight = container?.scrollHeight || 0;
+      currentPage += 1;
+      const res = await groupApi.getGroupMessages(group._id, currentPage);
+      const older = (res.messages || []).slice().reverse();
+      if (older.length === 0) { moreAvailable = false; break; }
+
+      isPrependingRef.current = true;
+      setMessages((prev) => [...older, ...prev]);
+      setPage(currentPage);
+      moreAvailable = older.length >= 50;
+      setHasMore(moreAvailable);
+
+      await new Promise((r) => setTimeout(r, 60)); // React ko DOM commit karne dena
+      if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
+
+      el = document.getElementById(`msg-${targetId}`);
+      if (el) found = true;
+    }
+
+    if (found && el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedMessageId(targetId);
+      setTimeout(() => setHighlightedMessageId(null), 1600);
+    } else {
+      showToast("Could not locate that message (too old)", "error");
+    }
   };
+
+  const handleJumpToReply = (messageId) => jumpToMessageId(messageId);
+  const handleJumpToResult = (result) => { setShowSearch(false); jumpToMessageId(result._id); };
 
   const handleDeleteMe = async (messageId) => {
     const res = await groupApi.deleteGroupMessageForMe(group._id, messageId);
@@ -1110,14 +1368,28 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
           <ChatMenu
             isAdminOrCreator={isAdminOrCreator}
             isCreator={myRole === "creator"}
+            isMuted={isMuted}
+            isFavorite={isFavorite}
             onAddMember={() => { setAutoOpenAddPicker(true); setShowProfile(true); }}
             onGroupInfo={() => { setAutoOpenAddPicker(false); setShowProfile(true); }}
+            onSearch={() => setShowSearch(true)}
+            onSelectMessages={() => setSelectMode(true)}
+            onToggleMute={handleToggleMute}
+            onToggleFavorite={handleToggleFavorite}
             onClearChat={handleClearChat}
             onExitOrDelete={handleExitOrDeleteFromMenu}
             onClose={() => setShowChatMenu(false)}
           />
         )}
       </div>
+
+      {/* Select-mode toolbar (replaces normal header info while active) */}
+      {selectMode && (
+        <div className="flex items-center justify-between px-4 py-2.5 bg-brand-600/10 border-b border-brand-500/20 flex-shrink-0">
+          <button type="button" onClick={exitSelectMode} className="text-sm text-gray-300 hover:text-white transition">{Icon.x} Cancel</button>
+          <span className="text-sm font-semibold text-brand-300">{selectedIds.size} selected</span>
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={messageListRef} onScroll={handleMessageListScroll} className="flex-1 overflow-y-auto px-4 py-4">
@@ -1142,13 +1414,27 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
               onRemoveReaction={handleRemoveReaction}
               onReply={setReplyingTo}
               onImageClick={setEnlargedImage}
+              onVideoClick={setEnlargedVideo}
+              onJumpToReply={handleJumpToReply}
+              highlighted={highlightedMessageId === msg._id}
               stickerMap={stickerMap}
+              selectMode={selectMode}
+              isSelected={selectedIds.has(msg._id)}
+              onToggleSelect={handleToggleSelect}
             />
           ))
         )}
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Select-mode bulk-action bar (replaces input bar while active) */}
+      {selectMode ? (
+        <div className="border-t border-white/10 bg-navy-900/50 px-4 py-3 flex-shrink-0 flex items-center gap-2">
+          <button type="button" disabled={selectedIds.size === 0} onClick={handleBulkDeleteMe} className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 disabled:opacity-40 rounded-xl text-sm font-medium transition">Delete for me</button>
+          <button type="button" disabled={selectedIds.size === 0} onClick={handleBulkDeleteAll} className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 text-red-300 rounded-xl text-sm font-semibold transition">Delete for everyone</button>
+        </div>
+      ) : (
+      <>
       {/* Input bar */}
       <div className="border-t border-white/10 bg-navy-900/50 px-4 py-3 flex-shrink-0">
         {replyingTo && (
@@ -1202,6 +1488,12 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {showSearch && (
+        <SearchPanel groupId={group._id} onClose={() => setShowSearch(false)} onJumpToResult={handleJumpToResult} />
+      )}
 
       {showProfile && (
         <GroupProfileModal
@@ -1218,6 +1510,13 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
       )}
 
       {enlargedImage && <ImageModal src={enlargedImage} name={group.name} onClose={() => setEnlargedImage(null)} />}
+
+      {enlargedVideo && (
+        <div className="fixed inset-0 z-[150] bg-black flex items-center justify-center" onClick={() => setEnlargedVideo(null)}>
+          <button type="button" onClick={() => setEnlargedVideo(null)} className="absolute top-4 right-4 z-10 text-white/80 hover:text-white p-2">{Icon.x}</button>
+          <video src={enlargedVideo} controls autoPlay className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }

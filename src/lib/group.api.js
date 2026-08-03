@@ -329,6 +329,15 @@ export const clearChatForMe = async (groupId) => {
   }
 };
 
+export const getGroupMedia = async (groupId) => {
+  try {
+    const res = await api.get(`/api/ecosystem/groups/${groupId}/media`);
+    return { success: true, media: res.data?.media || {}, counts: res.data?.counts || {} };
+  } catch (err) {
+    return { success: false, media: {}, counts: {}, msg: fail(err, "Could not load media").msg };
+  }
+};
+
 export const getOnlineGroupMembers = async (groupId) => {
   try {
     const res = await api.get(`/api/ecosystem/groups/${groupId}/online-members`);
