@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" /> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- interactive-widget=resizes-content: keyboard khulne par supporting
+         mobile browsers layout viewport ko shrink karte hain (sirf cover
+         nahi karte), taaki chat panel ka header/input keyboard ke peeche
+         hide na ho. JS fallback (useKeyboardSafeHeight) baaki browsers
+         handle karta hai. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
     <title>NexOrbite — Digital Products Marketplace for College Students</title>
     <meta name="description" content="NexOrbite is a digital products marketplace where college students buy and sell software, source code, CAD files, PCB layouts, UI kits, notes, and academic projects. Verified campus communities support the marketplace with student networking." />
     <meta property="og:title" content="NexOrbite — Digital Products Marketplace for College Students" />

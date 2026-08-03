@@ -5,7 +5,7 @@ export default function Footer() {
         
         <div className="text-white font-bold text-xl">
        Nex<span className="text-brand-500">Orbite</span>
-          <p className="text-gray-500 text-xs font-normal mt-1">Campus Ecosystem & Skill Marketplace</p>
+          <p className="text-gray-500 text-xs font-normal mt-1">Community Commerce Platform</p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 max-w-xs md:max-w-none">

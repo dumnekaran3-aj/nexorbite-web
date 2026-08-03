@@ -564,7 +564,7 @@ export default function Home() {
           <span className="text-brand-500">Collaborate.</span>
         </h1>
         <p className="text-gray-400 text-base md:text-xl max-w-2xl mb-8">
-          NexOrbite connects students across colleges — share projects, sell digital products, and grow your campus network.
+          NexOrbite is Community Commerce Platform , connects students across colleges — share , digital products and Projects, and grow your network.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">

@@ -14,6 +14,8 @@ import { AuthContext } from "../context/AuthContext";
 import { getSocket } from "../lib/socket";
 import { Icon, RoleBadge, ImageModal } from "./ChatPanel";
 import * as groupApi from "../lib/group.api";
+import useBackablePanel from "../hooks/useBackablePanel";
+import useKeyboardSafeHeight from "../hooks/useKeyboardSafeHeight";
 
 const fmtTime = (d) => new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const fmtSize = (b) => (b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`);
@@ -863,6 +865,13 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   const { user } = useContext(AuthContext);
   const myId = user?._id || user?.id;
 
+  // 🔴 FIX: back button ab pehle sirf is group-chat panel ko close karega
+  // (poori app navigate karne ke bajaye) — ek back-press = ek screen close.
+  useBackablePanel(onClose);
+  // 🔴 FIX: mobile keyboard khulne par header/3-dots hide hone wala bug —
+  // panel ki height ab visualViewport ke hisaab se track hoti hai.
+  const viewportHeight = useKeyboardSafeHeight();
+
   const [group, setGroup] = useState(initialGroup);
   const [myRole, setMyRole] = useState(initialMyRole);
   const [messages, setMessages] = useState([]);
@@ -1009,7 +1018,12 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
 
   useEffect(() => {
     if (isPrependingRef.current) { isPrependingRef.current = false; return; }
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // 🔴 REAL BUG FIX (keyboard closes right after sending a message):
+    // scrolling the message container itself (instead of calling
+    // scrollIntoView on a child) doesn't bubble up to the page, so the
+    // input never loses focus and the mobile keyboard stays open.
+    const el = messageListRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // ── Socket real-time ──────────────────────────────────────────────────
@@ -1019,7 +1033,19 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
 
     const onMessage = (msg) => {
       if (String(msg.groupId) !== String(group._id)) return;
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        // Already reconciled via the direct HTTP response, or a duplicate
+        // socket delivery — don't add it twice.
+        if (msg._id && prev.some((m) => m._id === msg._id)) return prev;
+        // Our own temp bubble still waiting to be reconciled (text or
+        // sticker match) — replace it in place instead of appending.
+        const ti = prev.findIndex((m) => m._tempId && (
+          (m.text && m.text === msg.text && String(m.sender?._id || m.sender) === String(msg.sender?._id || msg.sender)) ||
+          (m.stickerId && m.stickerId === msg.stickerId && String(m.sender?._id || m.sender) === String(msg.sender?._id || msg.sender))
+        ));
+        if (ti !== -1) { const c = [...prev]; c[ti] = msg; return c; }
+        return [...prev, msg];
+      });
       groupApi.markGroupMessagesSeen(group._id);
     };
     const onDeletedForAll = ({ messageId, groupId }) => {
@@ -1049,6 +1075,20 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
       if (String(groupId) !== String(group._id)) return;
       setTypingUsers(new Set());
     };
+    // 🔴 REAL BUG FIX (seen ticks group me kabhi update nahi hote the):
+    // markGroupMessagesSeen() call ho raha tha aur backend "group_messages_seen"
+    // socket event bhi emit kar raha tha (Eco.groupChat.controller.js), lekin
+    // yahan is event ka koi listener hi nahi tha — isliye jis user ne bheja
+    // uski screen par tick kabhi blue/double nahi hoti thi, seedha 1-on-1 chat
+    // (ChatPanel.jsx) mein already yeh listener maujood hai, group mein missing tha.
+    const onSeen = ({ groupId, seenBy }) => {
+      if (String(groupId) !== String(group._id)) return;
+      setMessages((prev) => prev.map((m) => (
+        m.seenBy?.some((id) => String(id) === String(seenBy))
+          ? m
+          : { ...m, seenBy: [...(m.seenBy || []), seenBy] }
+      )));
+    };
 
     socket.on("receive_group_message", onMessage);
     socket.on("group_message_deleted_for_all", onDeletedForAll);
@@ -1056,6 +1096,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     socket.on("group_message_reaction_removed", onReactionRemoved);
     socket.on("group_user_typing", onTyping);
     socket.on("group_user_stopped_typing", onStopTyping);
+    socket.on("group_messages_seen", onSeen);
 
     return () => {
       socket.emit("leave_group_room", { groupId: group._id });
@@ -1065,6 +1106,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
       socket.off("group_message_reaction_removed", onReactionRemoved);
       socket.off("group_user_typing", onTyping);
       socket.off("group_user_stopped_typing", onStopTyping);
+      socket.off("group_messages_seen", onSeen);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group._id]);
@@ -1090,16 +1132,46 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     if (sendingRef.current) return;
     sendingRef.current = true;
 
+    const replyToSnapshot = replyingTo;
     const replyToId = replyingTo?._id;
     setText("");
     setReplyingTo(null);
+
+    // 🔴 REAL BUG FIX ("jab tak msg send nahi hota tab tak screen pe nahi
+    // dikhta"): pehle yahan koi optimistic/local echo nahi tha — message
+    // sirf tab dikhta tha jab poora HTTP round-trip + socket event wapas
+    // aata (network slow ho to noticeable delay). ChatPanel (1-on-1) mein
+    // yeh pattern already tha (_tempId ke saath turant local bubble), group
+    // mein missing tha. Ab bhi wahi pattern: turant ek "sending..." bubble
+    // dikhta hai, jo real message aate hi (onMessage / direct response se)
+    // replace ho jaata hai.
+    const tempId = `temp-${Date.now()}`;
+    setMessages((prev) => [...prev, {
+      _tempId: tempId,
+      text: trimmed,
+      sender: { _id: myId },
+      createdAt: new Date().toISOString(),
+      seenBy: [myId],
+      replyTo: replyToSnapshot ? {
+        _id: replyToSnapshot._id,
+        text: replyToSnapshot.text,
+        messageType: replyToSnapshot.messageType,
+        senderName: replyToSnapshot.sender?.username,
+      } : null,
+    }]);
 
     const res = await groupApi.sendGroupMessage(group._id, trimmed, replyToId);
     sendingRef.current = false;
 
     if (!res.success) {
+      setMessages((prev) => prev.filter((m) => m._tempId !== tempId)); // remove failed optimistic bubble
       showToast(res.msg || "Could not send message", "error");
       setText(trimmed); // restore so user doesn't lose what they typed
+    } else if (res.message?._id) {
+      // Direct HTTP response is usually faster than the socket round-trip —
+      // reconcile immediately; the dedupe-by-_id guard in onMessage below
+      // handles it gracefully if the socket event arrives a moment later too.
+      setMessages((prev) => prev.map((m) => (m._tempId === tempId ? res.message : m)));
     }
   };
 
@@ -1107,8 +1179,30 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    // 🔴 Same fix as handleSend — instant local preview instead of waiting
+    // for the full upload + socket round-trip.
+    const tempId = `temp-media-${Date.now()}`;
+    const isImg = file.type.startsWith("image/");
+    const isVid = file.type.startsWith("video/");
+    const preview = (isImg || isVid) ? URL.createObjectURL(file) : null;
+    setMessages((prev) => [...prev, {
+      _tempId: tempId,
+      text: "",
+      sender: { _id: myId },
+      createdAt: new Date().toISOString(),
+      seenBy: [myId],
+      mediaUrl: preview,
+      mediaType: isImg ? "image" : isVid ? "video" : "file",
+      fileName: file.name,
+      fileSize: file.size,
+    }]);
     const res = await groupApi.sendGroupMediaMessage(group._id, file);
-    if (!res.success) showToast(res.msg || "Could not send file", "error");
+    if (!res.success) {
+      setMessages((prev) => prev.map((m) => (m._tempId === tempId ? { ...m, _failed: true } : m)));
+      showToast(res.msg || "Could not send file", "error");
+    } else if (res.message?._id) {
+      setMessages((prev) => prev.map((m) => (m._tempId === tempId ? res.message : m)));
+    }
   };
 
   // ── Voice recording (live mic — MediaRecorder API) ───────────────────
@@ -1190,8 +1284,15 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
 
   const handleSendSticker = async (stickerId) => {
     setShowStickerPicker(false);
+    const tempId = `temp-sticker-${Date.now()}`;
+    setMessages((prev) => [...prev, { _tempId: tempId, stickerId, messageType: "sticker", sender: { _id: myId }, createdAt: new Date().toISOString(), seenBy: [myId] }]);
     const res = await groupApi.sendGroupSticker(group._id, stickerId);
-    if (!res.success) showToast(res.msg || "Could not send sticker", "error");
+    if (!res.success) {
+      setMessages((prev) => prev.map((m) => (m._tempId === tempId ? { ...m, _failed: true } : m)));
+      showToast(res.msg || "Could not send sticker", "error");
+    } else if (res.message?._id) {
+      setMessages((prev) => prev.map((m) => (m._tempId === tempId ? res.message : m)));
+    }
   };
 
   const handleClearChat = async () => {
@@ -1345,7 +1446,7 @@ export default function GroupChatPanel({ group: initialGroup, myRole: initialMyR
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-navy-950 flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-navy-950 flex flex-col" style={{ height: viewportHeight ? `${viewportHeight}px` : "100dvh" }}>
       {localToast && <div className={`fixed top-4 right-4 z-[200] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg ${localToast.type === "error" ? "bg-red-600" : "bg-green-600"} text-white`}>{localToast.msg}</div>}
 
       {/* Header — tapping avatar/name opens Group Info (management) */}

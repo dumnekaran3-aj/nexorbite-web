@@ -16,6 +16,9 @@ import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { getRoleDisplay } from "../lib/roleTiers";
+import useBackablePanel from "../hooks/useBackablePanel";
+import useKeyboardSafeHeight from "../hooks/useKeyboardSafeHeight";
+import * as directChatApi from "../lib/directChat.api";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 export const Icon = {
@@ -38,6 +41,10 @@ export const Icon = {
   img:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
   file:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>,
   seendbl: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3"><polyline points="18 7 9.5 15.5 6 12"/><polyline points="22 7 13.5 15.5 10 12"/></svg>,
+  // 🆕 Bigger tick — user ne bola blue seen-tick chota lag raha tha,
+  // WhatsApp jaisa clearly-visible size chahiye (text ke andar aur media
+  // overlay dono jagah).
+  seendblLg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="w-[15px] h-[15px]"><polyline points="18 7 9.5 15.5 6 12"/><polyline points="22 7 13.5 15.5 10 12"/></svg>,
   mic:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>,
   stop:    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>,
   play:    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
@@ -230,7 +237,7 @@ function MsgMenu({ msg, isMine, onReply, onDeleteMe, onDeleteAll, onReact, onClo
 }
 
 // ─── MessageBubble with swipe-to-reply ───────────────────────────────────────
-function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, onImageClick }) {
+function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, onImageClick, stickerMap, selectMode, isSelected, onToggleSelect, onJumpToReply, highlighted }) {
   const navigate = useNavigate();
   const [menuOpen,  setMenuOpen]  = useState(false);
   const [reaction,  setReaction]  = useState(msg.reaction || null);
@@ -242,11 +249,13 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
   const handleReact = (emoji) => setReaction((prev) => prev === emoji ? null : emoji);
 
   const onTouchStart = (e) => {
+    if (selectMode) return;
     longPressTimer.current = setTimeout(() => setMenuOpen(true), 500);
     touchStartX.current = e.touches[0].clientX;
     swipeTriggered.current = false;
   };
   const onTouchMove = (e) => {
+    if (selectMode) return;
     clearTimeout(longPressTimer.current);
     if (touchStartX.current === null) return;
     const dx = e.touches[0].clientX - touchStartX.current;
@@ -257,6 +266,7 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
     }
   };
   const onTouchEnd = () => {
+    if (selectMode) return;
     clearTimeout(longPressTimer.current);
     if (swipeX < -35 && !swipeTriggered.current) {
       swipeTriggered.current = true;
@@ -275,6 +285,11 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
   const isVideo  = msg.mediaType === "video";
   const isVoice  = msg.mediaType === "voice";
   const isFile   = hasMedia && !isImage && !isVideo && !isVoice;
+  // 🆕 feature-parity: sticker messages (emoji-based, same pack as group chat)
+  const isSticker = msg.messageType === "sticker" && msg.stickerId;
+  // 🆕 pure photo/video (no caption text) — WhatsApp/group-chat jaisa hi
+  // "time+tick overlay directly on the media" treatment, no separate bubble line.
+  const isPureMedia = (isImage || isVideo) && !msg.text;
 
   // LIKE/SHARE FEATURE (new): Instagram-style "shared a project" bubble.
   // sharedProduct is a snapshot taken at share-time (see backend
@@ -282,11 +297,28 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
   // edited/deleted, since it doesn't depend on a live fetch.
   const sharedProduct = msg.messageType === "product_share" ? msg.sharedProduct : null;
 
+  // 🆕 WhatsApp-style time+tick pill, ported from GroupChatPanel — bada
+  // (seendblLg) tick, `overlay` mode media ke upar semi-transparent pill ke
+  // roop mein, warna text/voice/file bubble ke andar inline (jaisa WhatsApp
+  // mein dikhta hai).
+  const TimePill = ({ overlay }) => (
+    <span className={`flex items-center gap-1 ${overlay ? "bg-black/45 backdrop-blur-sm rounded-full px-2 py-0.5" : ""}`}>
+      <span className={`text-[10.5px] ${overlay ? "text-white/90" : "text-gray-500"}`}>{isTemp ? "sending..." : isFailed ? "failed ✕" : fmtTime(msg.createdAt)}</span>
+      {isMine && !isTemp && <span className={overlay ? "text-white/90" : (isSeen ? "text-brand-400" : "text-gray-600")}>{Icon.seendblLg}</span>}
+    </span>
+  );
+
   return (
     <div
-      className={`flex flex-col relative ${isMine ? "items-end" : "items-start"} mb-1`}
-      style={{ transform: `translateX(${swipeX}px)`, transition: swipeX === 0 ? "transform 0.2s" : "none" }}
-      onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
+      id={`msg-${msg._id}`}
+      className={`flex flex-col relative ${isMine ? "items-end" : "items-start"} mb-1 ${highlighted ? "animate-pulse" : ""}`}
+      style={{
+        transform: `translateX(${swipeX}px)`,
+        transition: swipeX === 0 ? "transform 0.2s" : "none",
+        ...(highlighted ? { backgroundColor: "rgba(124,58,237,0.15)", borderRadius: 12 } : {}),
+      }}
+      onContextMenu={(e) => { e.preventDefault(); if (!selectMode) setMenuOpen(true); }}
+      onClick={() => { if (selectMode) onToggleSelect(msg._id); }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -297,13 +329,46 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
         </div>
       )}
 
-      {msg.replyTo && (
-        <div className={`flex items-start gap-1 mb-1 max-w-[75%] px-2 py-1 rounded-xl border-l-2 border-brand-500 bg-white/5 text-xs text-gray-400 ${isMine ? "mr-1" : "ml-1"}`}>
-          <span className="truncate">{msg.replyTo?.text || (msg.replyTo?.messageType === "product_share" ? "📦 Shared project" : "Media")}</span>
-        </div>
-      )}
+      <div className={`flex items-start gap-2 w-full ${isMine ? "flex-row-reverse" : ""}`}>
+        {selectMode && (
+          <button
+            type="button"
+            onClick={() => onToggleSelect(msg._id)}
+            className={`w-5 h-5 mt-1 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${isSelected ? "bg-brand-500 border-brand-500" : "border-white/30"}`}
+          >
+            {isSelected && <span className="text-white text-[10px]">✓</span>}
+          </button>
+        )}
+        <div className="flex flex-col flex-1 min-w-0" style={{ alignItems: isMine ? "flex-end" : "flex-start" }}>
+          {msg.replyTo && (
+            <button
+              type="button"
+              onClick={() => onJumpToReply && onJumpToReply(msg.replyTo._id)}
+              className={`flex items-start gap-1 mb-1 max-w-[75%] px-2 py-1 rounded-xl border-l-2 border-brand-500 bg-white/5 text-xs text-gray-400 text-left hover:bg-white/10 transition ${isMine ? "mr-1" : "ml-1"}`}
+            >
+              <span className="truncate">{msg.replyTo?.text || (msg.replyTo?.messageType === "product_share" ? "📦 Shared project" : msg.replyTo?.messageType === "sticker" ? "🏷️ Sticker" : "Media")}</span>
+            </button>
+          )}
 
-      <div className={`relative max-w-[75%] rounded-2xl overflow-hidden ${isMine ? "bg-brand-600 rounded-tr-sm" : "bg-white/10 rounded-tl-sm"} ${isTemp ? "opacity-60" : ""} ${isFailed ? "border border-red-500" : ""} transition-opacity`}>
+          {isSticker ? (
+            <div className="flex flex-col" style={{ alignItems: isMine ? "flex-end" : "flex-start" }}>
+              <div className="text-5xl leading-none px-1">{stickerMap?.[msg.stickerId] || "🏷️"}</div>
+              <div className="px-1 mt-0.5"><TimePill overlay={false} /></div>
+            </div>
+          ) : isPureMedia ? (
+            /* 🆕 WhatsApp/group-jaisa: pure photo/video full-bleed, time+tick
+               seedha media ke corner par overlay (neeche alag line nahi). */
+            <div className={`relative max-w-[75%] rounded-2xl overflow-hidden ${isTemp ? "opacity-60" : ""} ${isFailed ? "border border-red-500" : ""} transition-opacity`}>
+              {isImage && (
+                <button type="button" onClick={() => onImageClick(msg.mediaUrl)} className="block w-full">
+                  <img src={msg.mediaUrl} alt="img" className="max-w-[260px] max-h-[320px] object-cover w-full" loading="lazy" />
+                </button>
+              )}
+              {isVideo && <video src={msg.mediaUrl} controls className="max-w-[260px] max-h-[320px] w-full" />}
+              <div className="absolute bottom-1.5 right-1.5"><TimePill overlay /></div>
+            </div>
+          ) : (
+          <div className={`relative max-w-[75%] rounded-2xl overflow-hidden ${isMine ? "bg-brand-600 rounded-tr-sm" : "bg-white/10 rounded-tl-sm"} ${isTemp ? "opacity-60" : ""} ${isFailed ? "border border-red-500" : ""} transition-opacity`}>
         {isImage && (
           <button type="button" onClick={() => onImageClick(msg.mediaUrl)} className="block w-full">
             <img src={msg.mediaUrl} alt="img" className="max-w-[260px] max-h-[200px] object-cover w-full" loading="lazy" />
@@ -349,16 +414,20 @@ function MessageBubble({ msg, isMine, myId, onReply, onDeleteMe, onDeleteAll, on
         )}
 
         {msg.text ? <SmartText text={msg.text} /> : null}
+
+        {/* 🆕 Text/voice/file bubble ke andar hi inline time+tick (WhatsApp
+            jaisa) — pure-media (caption-less photo/video) ke alawa har jagah. */}
+        <div className={`flex items-center justify-end gap-1 px-1 pb-1 ${msg.text ? "" : "pt-1"}`}>
+          <TimePill overlay={false} />
+        </div>
+          </div>
+          )}
+        </div>
       </div>
 
       {reaction && (
         <button type="button" onClick={() => setReaction(null)} className={`text-sm mt-0.5 px-1.5 py-0.5 rounded-full bg-white/10 border border-white/10 ${isMine ? "mr-1" : "ml-1"}`}>{reaction}</button>
       )}
-
-      <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMine ? "flex-row-reverse" : ""}`}>
-        <span className="text-[9px] text-gray-600">{isTemp ? "sending..." : isFailed ? "failed ✕" : fmtTime(msg.createdAt)}</span>
-        {isMine && !isTemp && <span className={isSeen ? "text-brand-400" : "text-gray-600"}>{Icon.seendbl}</span>}
-      </div>
 
       {menuOpen && <MsgMenu msg={msg} isMine={isMine} onReply={onReply} onDeleteMe={onDeleteMe} onDeleteAll={onDeleteAll} onReact={handleReact} onClose={() => setMenuOpen(false)} />}
     </div>
@@ -451,7 +520,7 @@ function MediaGallery({ chatId, friend, onClose, onImageClick }) {
 // FIX: pehle header ke right side sirf ek connection-status "dot" tha (green/
 // yellow/red). Ab wahi jagah ek proper "⋮" menu button hai jisme profile,
 // media, mute, block, aur report jaise real options hain.
-function ChatOptionsMenu({ isReady, muted, onViewProfile, onMedia, onToggleMute, onBlock, onReport, onClose }) {
+function ChatOptionsMenu({ isReady, muted, isFavorite, onViewProfile, onMedia, onSearch, onSelectMessages, onToggleMute, onToggleFavorite, onBlock, onReport, onClose }) {
   const ref = useRef(null);
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -460,11 +529,14 @@ function ChatOptionsMenu({ isReady, muted, onViewProfile, onMedia, onToggleMute,
   }, [onClose]);
 
   const items = [
-    { key: "profile", label: "View Profile",            icon: Icon.user,  action: onViewProfile },
-    { key: "media",   label: "Media, links & files",     icon: Icon.gallery, action: onMedia },
-    { key: "mute",    label: muted ? "Unmute notifications" : "Mute notifications", icon: Icon.bell, action: onToggleMute },
-    { key: "block",   label: "Block user",               icon: Icon.ban,   action: onBlock,  danger: true },
-    { key: "report",  label: "Report user",              icon: Icon.flag,  action: onReport, danger: true },
+    { key: "profile",  label: "View Profile",            icon: Icon.user,    action: onViewProfile },
+    { key: "media",    label: "Media, links & files",     icon: Icon.gallery, action: onMedia },
+    { key: "search",   label: "Search",                   icon: Icon.suggest, action: onSearch },
+    { key: "select",   label: "Select Messages",          icon: "☑️",         action: onSelectMessages },
+    { key: "mute",     label: muted ? "Unmute notifications" : "Mute notifications", icon: Icon.bell, action: onToggleMute },
+    { key: "favorite", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", icon: isFavorite ? "⭐" : "☆", action: onToggleFavorite },
+    { key: "block",    label: "Block user",               icon: Icon.ban,     action: onBlock,  danger: true },
+    { key: "report",   label: "Report user",              icon: Icon.flag,    action: onReport, danger: true },
   ];
 
   return (
@@ -551,10 +623,102 @@ function ReportModal({ friend, onClose, onSubmit }) {
   );
 }
 
+// ─── SearchPanel (feature-parity, ported from GroupChatPanel) ───────────────
+function SearchPanel({ chatId, onClose, onJumpToResult }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!query.trim()) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      const res = await directChatApi.searchMessages(chatId, query.trim());
+      setResults(res.results || []);
+      setLoading(false);
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, chatId]);
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-navy-950 flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-navy-900/50 flex-shrink-0">
+        <button type="button" onClick={onClose} className="text-gray-400 hover:text-white transition">{Icon.back}</button>
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search in this chat..."
+          style={{ fontSize: 16 }}
+          className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm outline-none focus:border-brand-500"
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {loading && <div className="flex justify-center py-8"><div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>}
+        {!loading && query.trim() && results.length === 0 && (
+          <p className="text-center text-gray-600 text-sm py-12">No messages found</p>
+        )}
+        <div className="space-y-2">
+          {results.map((r) => (
+            <button
+              key={r._id}
+              type="button"
+              onClick={() => onJumpToResult(r)}
+              className="w-full text-left bg-white/[0.03] hover:bg-white/[0.06] rounded-xl px-3 py-2.5 transition"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-xs font-semibold text-brand-400">@{r.sender?.username}</span>
+                <span className="text-[10px] text-gray-600">{fmtTime(r.createdAt)}</span>
+              </div>
+              <p className="text-sm text-gray-300 line-clamp-2">{r.text || `📎 ${r.messageType}`}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── StickerPicker (feature-parity, ported from GroupChatPanel) ────────────
+function StickerPicker({ stickers, onPick, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="absolute bottom-20 left-3 z-30 bg-[#1c1c1e] border border-white/10 rounded-2xl p-3 shadow-2xl w-64">
+      <p className="text-xs text-gray-500 font-semibold mb-2">Stickers</p>
+      {stickers.length === 0 ? (
+        <p className="text-center text-gray-600 text-xs py-6">No stickers available</p>
+      ) : (
+        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+          {stickers.map((s) => (
+            <button key={s.id} type="button" onClick={() => onPick(s.id)} className="aspect-square rounded-xl bg-white/5 hover:bg-white/10 transition flex items-center justify-center text-2xl">
+              {s.emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── CHAT PANEL (default export) ─────────────────────────────────────────────
 export default function ChatPanel({ friend, myId, onClose }) {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // 🔴 FIX: back button ab pehle sirf is chat panel ko close karega
+  // (poori app navigate karne ke bajaye) — ek back-press = ek screen close.
+  useBackablePanel(onClose);
+  // 🔴 FIX: mobile keyboard khulne par header/profile/3-dots hide hone wala
+  // bug — panel ki height ab visualViewport ke hisaab se track hoti hai.
+  const viewportHeight = useKeyboardSafeHeight();
 
   const [messages,     setMessages]     = useState([]);
   const [text,         setText]         = useState("");
@@ -578,6 +742,18 @@ export default function ChatPanel({ friend, myId, onClose }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [muted,        setMuted]        = useState(false);
   const [blocked,      setBlocked]      = useState(false);
+
+  // 🆕 Feature-parity additions ported over from GroupChatPanel: favorite
+  // toggle, search-in-chat, select-mode + bulk delete, sticker picker,
+  // jump-to-replied-message.
+  const [isFavorite,   setIsFavorite]   = useState(false);
+  const [showSearch,   setShowSearch]   = useState(false);
+  const [selectMode,   setSelectMode]   = useState(false);
+  const [selectedIds,  setSelectedIds]  = useState(new Set());
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [stickerPack,  setStickerPack]  = useState([]);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [localToast,   setLocalToast]   = useState(null);
 
   // 🆕 Older-message pagination (scalability fix — pehle sirf latest 50
   // messages hi load hote the, purani chat kabhi nahi milti thi)
@@ -608,6 +784,19 @@ export default function ChatPanel({ friend, myId, onClose }) {
 
   const friendId = friend?._id ? String(friend._id) : null;
 
+  // 🆕 emoji lookup for rendering sticker messages (id -> emoji)
+  const stickerMap = Object.fromEntries(stickerPack.map((s) => [s.id, s.emoji]));
+
+  const showToast = useCallback((msg, type = "success") => {
+    setLocalToast({ msg, type });
+    setTimeout(() => setLocalToast(null), 2500);
+  }, []);
+
+  // 🆕 fetch the shared sticker pack once (same pack group chat already uses)
+  useEffect(() => {
+    directChatApi.getStickerPack().then(setStickerPack);
+  }, []);
+
   useEffect(() => { myIdRef.current = myId; if (friend?.username) friendUsernameRef.current = friend.username; });
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -633,6 +822,9 @@ export default function ChatPanel({ friend, myId, onClose }) {
           setFriendOnline(!!r.data.friendStatus.isOnline);
           if (r.data.friendStatus.lastSeen) setLastSeen(r.data.friendStatus.lastSeen);
         }
+        // 🆕 feature-parity: mute/favorite now actually persist on the backend
+        setMuted(!!r.data?.isMuted);
+        setIsFavorite(!!r.data?.isFavorite);
 
         pageRef.current = 1;
         setHasMoreOlder(true);
@@ -737,8 +929,16 @@ export default function ChatPanel({ friend, myId, onClose }) {
         if (diff > 0) el.scrollTop += diff;
       });
     } else if (source === "initial" || isNearBottomRef.current) {
+      // 🔴 REAL BUG FIX (keyboard closes right after sending a message):
+      // `bottomRef.current.scrollIntoView(...)` scrolls whichever ancestor
+      // needs to move — on mobile that can bubble up and nudge the page's
+      // own scroll position, which many mobile browsers treat as "user
+      // scrolled away", so they auto-dismiss the on-screen keyboard.
+      // Scrolling the message container directly (`el.scrollTo`) achieves
+      // the exact same visual result without touching anything outside
+      // this div, so the input never loses focus and the keyboard stays up.
       requestAnimationFrame(() => {
-        bottomRef.current?.scrollIntoView({ behavior: source === "initial" ? "auto" : "smooth" });
+        el.scrollTo({ top: el.scrollHeight, behavior: source === "initial" ? "auto" : "smooth" });
       });
       setShowNewMsgHint(false);
     } else {
@@ -784,7 +984,8 @@ export default function ChatPanel({ friend, myId, onClose }) {
   }, [loadingOlder, hasMoreOlder]);
 
   const scrollToBottomNow = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     setShowNewMsgHint(false);
   };
 
@@ -801,6 +1002,8 @@ export default function ChatPanel({ friend, myId, onClose }) {
         setFriendOnline(!!r.data.friendStatus.isOnline);
         if (r.data.friendStatus.lastSeen) setLastSeen(r.data.friendStatus.lastSeen);
       }
+      setMuted(!!r.data?.isMuted);
+      setIsFavorite(!!r.data?.isFavorite);
       pageRef.current = 1;
       setHasMoreOlder(true);
       const msgsRes = await api.get(`/api/ecosystem/chat/${id}/messages`, { params: { page: 1, limit: 30 } });
@@ -922,7 +1125,132 @@ export default function ChatPanel({ friend, myId, onClose }) {
   // 🆕 3-dot menu actions
   const handleViewProfile = () => { onClose(); navigate(`/profile/${friendId}`); };
 
-  const handleToggleMute = () => setMuted((m) => !m);
+  const handleToggleMute = async () => {
+    const next = !muted;
+    setMuted(next); // optimistic
+    const cid = chatIdRef.current;
+    if (!cid) return;
+    const res = await directChatApi.toggleMuteChat(cid, next);
+    if (!res.success) { setMuted(!next); showToast(res.msg || "Could not update", "error"); }
+    else showToast(next ? "Notifications muted" : "Notifications unmuted");
+  };
+
+  const handleToggleFavorite = async () => {
+    const next = !isFavorite;
+    setIsFavorite(next); // optimistic
+    const cid = chatIdRef.current;
+    if (!cid) return;
+    const res = await directChatApi.toggleFavoriteChat(cid, next);
+    if (!res.success) { setIsFavorite(!next); showToast(res.msg || "Could not update", "error"); }
+    else showToast(next ? "Added to favorites" : "Removed from favorites");
+  };
+
+  // 🆕 Select-mode + bulk delete (ported from GroupChatPanel)
+  const handleToggleSelect = (messageId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  };
+  const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+  const handleBulkDeleteMe = async () => {
+    if (selectedIds.size === 0) return;
+    const cid = chatIdRef.current;
+    const ids = [...selectedIds];
+    const res = await directChatApi.bulkDeleteForMe(cid, ids);
+    if (res.success) {
+      setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
+      showToast(`${res.deletedCount} message(s) deleted`);
+      exitSelectMode();
+    } else {
+      showToast(res.msg || "Could not delete messages", "error");
+    }
+  };
+
+  const handleBulkDeleteAll = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} message(s) for everyone?`)) return;
+    const cid = chatIdRef.current;
+    const ids = [...selectedIds];
+    const res = await directChatApi.bulkDeleteForAll(cid, ids);
+    if (res.success) {
+      setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
+      showToast(`${res.deletedCount} deleted${res.skippedCount ? `, ${res.skippedCount} skipped (not yours)` : ""}`);
+      exitSelectMode();
+    } else {
+      showToast(res.msg || "Could not delete messages", "error");
+    }
+  };
+
+  // 🆕 Jump-to-replied-message (ported from GroupChatPanel) — if the target
+  // is already loaded, scroll + flash-highlight it; otherwise progressively
+  // load older pages (max 8 tries) until found or the server runs out.
+  const jumpToMessageId = async (targetId) => {
+    let el = document.getElementById(`msg-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedMessageId(targetId);
+      setTimeout(() => setHighlightedMessageId(null), 1600);
+      return;
+    }
+
+    const cid = chatIdRef.current;
+    let currentPage = pageRef.current;
+    let moreAvailable = hasMoreOlder;
+    const container = scrollRef.current;
+    let found = false;
+
+    for (let attempt = 0; attempt < 8 && !found && moreAvailable; attempt++) {
+      const prevScrollHeight = container?.scrollHeight || 0;
+      currentPage += 1;
+      const res = await api.get(`/api/ecosystem/chat/${cid}/messages`, { params: { page: currentPage, limit: 30 } });
+      const older = res.data?.messages || [];
+      if (older.length === 0) { moreAvailable = false; break; }
+
+      messageSourceRef.current = "prepend";
+      prevScrollHeightRef.current = prevScrollHeight;
+      setMessages((prev) => [...[...older].reverse(), ...prev]);
+      pageRef.current = currentPage;
+      moreAvailable = older.length === 30;
+      setHasMoreOlder(moreAvailable);
+
+      await new Promise((r) => setTimeout(r, 60)); // DOM commit hone dena
+      if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
+
+      el = document.getElementById(`msg-${targetId}`);
+      if (el) found = true;
+    }
+
+    if (found && el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedMessageId(targetId);
+      setTimeout(() => setHighlightedMessageId(null), 1600);
+    } else {
+      showToast("Could not locate that message (too old)", "error");
+    }
+  };
+  const handleJumpToReply  = (messageId) => jumpToMessageId(messageId);
+  const handleJumpToResult = (result) => { setShowSearch(false); jumpToMessageId(result._id); };
+
+  // 🆕 Send sticker (feature-parity with group chat)
+  const sendSticker = async (stickerId) => {
+    const cid = chatIdRef.current;
+    if (!cid || !isReady) return;
+    setShowStickerPicker(false); setShowAttach(false);
+    const tempId = `temp-sticker-${Date.now()}`;
+    setMessages((prev) => [...prev, { _tempId: tempId, stickerId, messageType: "sticker", sender: { _id: myIdRef.current }, createdAt: new Date().toISOString() }]);
+    try {
+      const res = await api.post("/api/ecosystem/chat/send-sticker", { chatId: cid, stickerId });
+      const realMsg = res.data?.message;
+      if (realMsg?._id) setMessages((prev) => prev.map((m) => m._tempId === tempId ? realMsg : m));
+    } catch {
+      setMessages((prev) => prev.map((m) => m._tempId === tempId ? { ...m, _failed: true } : m));
+      setChatError("Sticker send nahi hua."); setTimeout(() => setChatError(null), 4000);
+    }
+  };
 
   const handleBlock = async () => {
     if (!window.confirm(`Block ${friend.fullName || friend.username}? They won't be able to message you.`)) return;
@@ -975,11 +1303,29 @@ export default function ChatPanel({ friend, myId, onClose }) {
         <ReportModal friend={friend} onClose={() => setShowReportModal(false)} onSubmit={handleReportSubmit} />
       )}
 
+      {showSearch && (
+        <SearchPanel chatId={chatIdRef.current} onClose={() => setShowSearch(false)} onJumpToResult={handleJumpToResult} />
+      )}
+
+      {localToast && (
+        <div className={`fixed top-4 right-4 z-[200] px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg ${localToast.type === "error" ? "bg-red-600" : "bg-green-600"} text-white`}>
+          {localToast.msg}
+        </div>
+      )}
+
       {/* FIX: pehle ye ek chota centered card tha (max-w-md, h-[640px]) — ab
-          poori screen cover karta hai jab open ho, har screen size par. */}
-      <div className="fixed inset-0 z-50 flex flex-col bg-navy-950" style={{ height: "100dvh" }}>
+          poori screen cover karta hai jab open ho, har screen size par.
+          height ab `viewportHeight` (visualViewport) se aati hai taaki
+          keyboard khulne par header/input screen se bahar na chale jaayein. */}
+      <div className="fixed inset-0 z-50 flex flex-col bg-navy-950" style={{ height: viewportHeight ? `${viewportHeight}px` : "100dvh" }}>
         <div className="bg-[#0f0f0f] flex flex-col overflow-hidden flex-1 min-h-0 relative">
 
+          {selectMode ? (
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414] flex-shrink-0">
+              <button type="button" onClick={exitSelectMode} className="p-1 text-gray-400 hover:text-white transition">{Icon.back}</button>
+              <p className="flex-1 text-sm font-medium">{selectedIds.size} selected</p>
+            </div>
+          ) : (
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#141414] flex-shrink-0 relative">
             <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-white transition">{Icon.back}</button>
             <div className="relative flex-shrink-0">
@@ -997,7 +1343,8 @@ export default function ChatPanel({ friend, myId, onClose }) {
 
             {/* FIX: pehle yahan sirf ek plain connection "dot" hota tha
                 (right side). Ab ek proper 3-dot (⋮) menu button hai jisme
-                profile/media/mute/block/report jaise real options hain. */}
+                profile/media/search/select/mute/favorite/block/report jaise
+                real options hain. */}
             <button
               type="button"
               onClick={() => setShowOptionsMenu((v) => !v)}
@@ -1010,15 +1357,20 @@ export default function ChatPanel({ friend, myId, onClose }) {
               <ChatOptionsMenu
                 isReady={isReady}
                 muted={muted}
+                isFavorite={isFavorite}
                 onViewProfile={handleViewProfile}
                 onMedia={() => chatIdRef.current && setShowGallery(true)}
+                onSearch={() => setShowSearch(true)}
+                onSelectMessages={() => setSelectMode(true)}
                 onToggleMute={handleToggleMute}
+                onToggleFavorite={handleToggleFavorite}
                 onBlock={handleBlock}
                 onReport={() => setShowReportModal(true)}
                 onClose={() => setShowOptionsMenu(false)}
               />
             )}
           </div>
+          )}
 
           <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-3 min-h-0 relative">
             {loadingOlder && (
@@ -1040,7 +1392,14 @@ export default function ChatPanel({ friend, myId, onClose }) {
               const msgKey   = m._id ? `msg-${m._id}` : m._tempId || `idx-${i}`;
               return (
                 <MessageBubble key={msgKey} msg={m} isMine={isMine} myId={myId}
-                  onReply={setReplyTo} onDeleteMe={deleteForMe} onDeleteAll={deleteForAll} onImageClick={setViewImg} />
+                  onReply={setReplyTo} onDeleteMe={deleteForMe} onDeleteAll={deleteForAll} onImageClick={setViewImg}
+                  stickerMap={stickerMap}
+                  selectMode={selectMode}
+                  isSelected={selectedIds.has(m._id)}
+                  onToggleSelect={handleToggleSelect}
+                  onJumpToReply={handleJumpToReply}
+                  highlighted={highlightedMessageId === m._id}
+                />
               );
             })}
             {uploading && <div className="flex justify-end mt-1"><div className="px-4 py-2 bg-brand-600/40 rounded-2xl text-xs text-gray-300 flex items-center gap-2"><div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>Uploading...</div></div>}
@@ -1085,11 +1444,26 @@ export default function ChatPanel({ friend, myId, onClose }) {
                   {icon}<span className="text-[10px]">{label}</span>
                 </button>
               ))}
+              {/* 🆕 Sticker (feature-parity with group chat) */}
+              <button type="button" onClick={() => { setShowAttach(false); setShowStickerPicker(true); }}
+                className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl hover:bg-white/5 transition text-gray-400 hover:text-white">
+                <span className="text-lg leading-none">😀</span><span className="text-[10px]">Sticker</span>
+              </button>
             </div>
           )}
 
           <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) sendMedia(f); e.target.value = ""; }} />
 
+          {showStickerPicker && (
+            <StickerPicker stickers={stickerPack} onPick={sendSticker} onClose={() => setShowStickerPicker(false)} />
+          )}
+
+          {selectMode ? (
+            <div className="px-3 py-3 border-t border-white/10 flex items-center gap-2 flex-shrink-0">
+              <button type="button" disabled={selectedIds.size === 0} onClick={handleBulkDeleteMe} className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 disabled:opacity-40 rounded-xl text-sm font-medium transition">Delete for me</button>
+              <button type="button" disabled={selectedIds.size === 0} onClick={handleBulkDeleteAll} className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 text-red-300 rounded-xl text-sm font-semibold transition">Delete for everyone</button>
+            </div>
+          ) : (
           <div className="px-3 py-3 border-t border-white/10 flex items-center gap-2 flex-shrink-0 relative">
             {showEmoji && (
               <EmojiPicker
@@ -1132,6 +1506,7 @@ export default function ChatPanel({ friend, myId, onClose }) {
               {sending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : Icon.send2}
             </button>
           </div>
+          )}
 
         </div>
       </div>
