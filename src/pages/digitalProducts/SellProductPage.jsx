@@ -1,6 +1,7 @@
 // src/pages/digitalProduct/SellProductPage.jsx
 import { useContext, useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import JSZip from "jszip";
 import { AuthContext } from "../../context/AuthContext";
 import { createDigitalProduct } from "../../lib/digitalproduct.api";
 import { getMyCommunities } from "../../lib/community.api";
@@ -55,6 +56,35 @@ export default function SellProductPage() {
   const [attributes, setAttributes] = useState([]); // [{label, value}]
   const [cover, setCover] = useState(null);
   const [assetFiles, setAssetFiles] = useState({}); // { slotName: File }
+  const [zipping, setZipping] = useState({}); // { slotName: bool } — folder→zip in progress
+
+  // 🆕 FIX: CS branch me "code" / "design_file" slots ab poora folder bhi
+  // accept karte hain (allowFolder: true in constants), zip mandatory nahi
+  // raha. Folder select hone par browser se saare files (webkitRelativePath
+  // ke saath) milte hain, unhe yahin client-side JSZip se ek .zip bana ke
+  // normal assetFiles[slot] flow me daal dete hain — backend contract
+  // (per-slot single file) isse tootta nahi.
+  const handleFolderSelect = async (slot, fileList) => {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    setZipping((p) => ({ ...p, [slot]: true }));
+    try {
+      const zip = new JSZip();
+      files.forEach((file) => {
+        const path = file.webkitRelativePath || file.name;
+        zip.file(path, file);
+      });
+      const blob = await zip.generateAsync({ type: "blob" });
+      const folderName = files[0].webkitRelativePath?.split("/")[0] || slot;
+      const zippedFile = new File([blob], `${folderName}.zip`, { type: "application/zip" });
+      setAssetFiles((p) => ({ ...p, [slot]: zippedFile }));
+      setErrors((p) => ({ ...p, [slot]: undefined }));
+    } catch (err) {
+      showToast("Folder ko zip karne me dikkat aayi, dobara try karo", "error");
+    } finally {
+      setZipping((p) => ({ ...p, [slot]: false }));
+    }
+  };
 
   // ── Communities this user can push a listing to ────────────────────────
   const [communities, setCommunities] = useState([]); // [{collegeId, name, isprivate, myRole}]
@@ -330,13 +360,28 @@ export default function SellProductPage() {
 
               {slots.map((s) => (
                 <Field key={s.slot} label={`${s.emoji} ${s.label} ${s.required ? "*" : "(optional)"}`} error={errors[s.slot]}>
-                  <input
-                    type="file"
-                    accept={s.accept}
-                    onChange={(e) => setAssetFiles((p) => ({ ...p, [s.slot]: e.target.files[0] }))}
-                    className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer"
-                  />
-                  {assetFiles[s.slot] && <p className="text-xs text-green-400 mt-1">{fileLabel(assetFiles[s.slot])}</p>}
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="file"
+                      accept={s.accept}
+                      onChange={(e) => setAssetFiles((p) => ({ ...p, [s.slot]: e.target.files[0] }))}
+                      className="text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand-600/20 file:text-brand-300 hover:file:bg-brand-600/40 cursor-pointer"
+                    />
+                    {s.allowFolder && (
+                      <label className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 cursor-pointer w-fit">
+                        <input
+                          type="file"
+                          webkitdirectory="true"
+                          directory="true"
+                          multiple
+                          onChange={(e) => handleFolderSelect(s.slot, e.target.files)}
+                          className="hidden"
+                        />
+                        📁 {zipping[s.slot] ? "Folder zip ho raha hai…" : "or select a whole folder instead"}
+                      </label>
+                    )}
+                    {assetFiles[s.slot] && <p className="text-xs text-green-400">{fileLabel(assetFiles[s.slot])}</p>}
+                  </div>
                 </Field>
               ))}
             </>

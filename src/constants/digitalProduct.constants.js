@@ -36,10 +36,16 @@ export const BRANCH_ASSET_SLOTS = {
     { slot: 'video',      label: 'Walkthrough Video',      emoji: '🎥', accept: '.mp4,.mov',           required: false },
     { slot: 'simulation', label: 'STAAD / ETABS File',     emoji: '📊', accept: '.zip,.std',           required: false },
   ],
-  CS: [
+  // ⚠️ NOTE: 'code' slot ab required nahi hai (pehle .zip mandatory tha).
+  // Ab CS branch me user ya toh ek .zip file de sakta hai, YA seedha poora
+  // folder select kar sakta hai (allowFolder: true) — folder browser me hi
+  // client-side zip ho jaata hai (JSZip) taaki backend contract (single
+  // file per slot) na tootey. Zip abhi ke liye optional hai jab tak backend
+  // side pe bhi isko truly optional na kar diya jaaye.
+  'Computer Science': [
     { slot: 'theory_pdf',  label: 'Documentation PDF',   emoji: '📄', accept: '.pdf',             required: true  },
-    { slot: 'code',        label: 'Source Code (ZIP)',   emoji: '💻', accept: '.zip',             required: true  },
-    { slot: 'design_file', label: 'UI/UX Design File',   emoji: '🎨', accept: '.fig,.sketch,.zip',required: false },
+    { slot: 'code',        label: 'Source Code (ZIP or Folder)', emoji: '💻', accept: '.zip', required: false, allowFolder: true },
+    { slot: 'design_file', label: 'UI/UX Design File',   emoji: '🎨', accept: '.fig,.sketch,.zip',required: false, allowFolder: true },
     { slot: 'video',       label: 'Demo Video',          emoji: '🎥', accept: '.mp4,.mov',        required: false },
     { slot: 'db_schema',   label: 'DB Schema / ERD',     emoji: '🗄️', accept: '.sql,.pdf,.png,.zip', required: false },
   ],
@@ -56,7 +62,7 @@ export const BRANCH_CATEGORIES = {
   Electrical: ['PCB Layout (Gerber)', 'Schematic Diagrams', 'Circuit Design', 'MATLAB Simulation', 'VHDL / Verilog Code', 'Embedded C Code', 'Arduino / ESP32 Project', 'Power System Design', 'Signal Processing Script', 'Control System Design', 'Lab Manual', 'Notes'],
   EEE:        ['PCB Layout (Gerber)', 'Power Electronics Design', 'Schematic Diagrams', 'MATLAB Simulation', 'PLC Programming', 'SCADA Design', 'Renewable Energy Design', 'Motor Drive Design', 'Embedded Systems Code', 'Lab Manual', 'Notes'],
   Civil:      ['AutoCAD Drawings (.dwg)', 'Structural Design', 'Blueprints / Floor Plans', 'STAAD Pro Files', 'Revit / BIM Files', 'Survey Data', 'Estimation & Costing Sheet', 'Environmental Impact Report', 'Road Design', 'Bridge Design', 'Soil Report Template', 'Notes'],
-  CS:         ['API / Backend', 'Frontend / UI Kit', 'SaaS Template', 'ML / AI Model', 'Database Schema', 'DevOps Script', 'Mobile App Source', 'Chrome Extension', 'UI Design (Figma)', 'System Design Doc', 'DSA Sheet', 'Interview Prep', 'Open Source Project', 'Notes'],
+  'Computer Science': ['API / Backend', 'Frontend / UI Kit', 'SaaS Template', 'ML / AI Model', 'Database Schema', 'DevOps Script', 'Mobile App Source', 'Chrome Extension', 'UI Design (Figma)', 'System Design Doc', 'DSA Sheet', 'Interview Prep', 'Open Source Project', 'Notes'],
   Common:     ['Project Report Template', 'Research Paper', 'Presentation (PPT)', 'Resume Template', 'SOP Template', 'Mini Project', 'Final Year Project', 'Internship Report', 'Lab Manual', 'Viva Questions', 'Previous Year Papers'],
 };
 
@@ -68,6 +74,6 @@ export const BRANCH_COLORS = {
   Electrical: { dot: '#22d3ee', pill: '#22d3ee18', border: '#22d3ee44' },
   EEE:        { dot: '#ec4899', pill: '#ec489918', border: '#ec489944' },
   Civil:      { dot: '#84cc16', pill: '#84cc1618', border: '#84cc1644' },
-  CS:         { dot: '#7c3aed', pill: '#7c3aed18', border: '#7c3aed44' },
+  'Computer Science': { dot: '#7c3aed', pill: '#7c3aed18', border: '#7c3aed44' },
   Common:     { dot: '#3b82f6', pill: '#3b82f618', border: '#3b82f644' },
 };
