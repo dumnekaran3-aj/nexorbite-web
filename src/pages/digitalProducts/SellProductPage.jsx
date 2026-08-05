@@ -46,7 +46,7 @@ export default function SellProductPage() {
     category: "",
     title: "",
     description: "",
-    price: "",
+    price: "0",
     pushTo: "community",
     collegeId: "", // BUG FIX (Part 3): which community this listing gets pushed to —
                    // previously never sent, backend just guessed an arbitrary
@@ -290,8 +290,37 @@ export default function SellProductPage() {
                 <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What's included, how it works, who it's for..." rows={5} className={iCls(errors.description) + " resize-none"} />
               </Field>
 
-              <Field label="Price (₹) *" error={errors.price} hint="Set 0 to list it for free">
-                <input type="number" min="0" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="0" className={iCls(errors.price)} />
+              {/* 🆕 FIX: Paid listings temporarily locked — sirf Free listings
+                  allowed abhi ke liye. "Paid" button blurred + "Coming Soon"
+                  badge ke saath disabled hai, "Free" hamesha selected/locked
+                  rehta hai (form.price default hi "0" hai). Jab paid launch
+                  karna ho, bas disabled + blur classes aur onClick guard
+                  hata dena — baaki sab (price input, backend isPaid logic)
+                  already wahi hai jo pehle tha. */}
+              <Field label="Pricing *" error={errors.price}>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => set("price", "0")}
+                    className="py-3 rounded-2xl border text-sm font-bold transition border-brand-500 bg-brand-600/20 text-brand-300"
+                  >
+                    🆓 Free
+                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled
+                      title="Paid listings launching soon"
+                      className="w-full h-full py-3 rounded-2xl border border-white/10 text-gray-500 text-sm font-bold cursor-not-allowed blur-[1.5px] opacity-60 select-none"
+                    >
+                      💰 Paid
+                    </button>
+                    <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-yellow-500 text-black px-2 py-0.5 rounded-full whitespace-nowrap">
+                      Coming Soon
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Paid listings launch karne wale hain — abhi ke liye sirf free listings allowed hain.</p>
               </Field>
 
               <Field label="Attributes" hint="Optional specs shown on the product page (e.g. 'Pages: 40', 'Language: Python')">
