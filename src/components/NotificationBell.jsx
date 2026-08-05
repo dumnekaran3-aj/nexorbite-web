@@ -1,4 +1,10 @@
 // src/components/NotificationBell.jsx
+//
+// 🎨 REDESIGN: dropdown panel ab full-page Notifications.jsx jaisa hi
+// WhatsApp-style dikhta hai — bada avatar + type-color corner badge, bold
+// title, readable body text (pehle sab bohot chhota/generic tha, browser
+// push-notification jaisa lagta tha). Same NOTIF_META palette dono jagah
+// use hoti hai taaki app mein kahin bhi notification dikhe, feel same rahe.
 import { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -13,65 +19,77 @@ const BellIcon = ({ hasUnread }) => (
   </svg>
 );
 
-const NOTIF_ICONS = {
-  friend_request:       "👋",
-  friend_accepted:      "🤝",
-  new_message:          "💬",
-  new_community_member: "🏫",
-  new_product:          "🛒",
-  new_feed:             "📢",
-  member_suggestion:    "🔍",
-  group_join_request:      "🙋",
-  group_join_accepted:     "🎉",
-  group_join_declined:     "🚫",
-  added_to_group:          "👥",
-  promoted_to_group_admin: "⭐",
+// Per-type icon + accent color — same palette as Notifications.jsx so the
+// bell dropdown and the full page always feel like the same product.
+const NOTIF_META = {
+  friend_request:           { icon: "👋", dot: "bg-sky-500" },
+  friend_accepted:          { icon: "🤝", dot: "bg-emerald-500" },
+  new_message:               { icon: "💬", dot: "bg-brand-500" },
+  new_group_message:         { icon: "💬", dot: "bg-brand-500" },
+  new_community_member:     { icon: "🏫", dot: "bg-amber-500" },
+  new_product:               { icon: "🛒", dot: "bg-emerald-500" },
+  new_feed:                  { icon: "📢", dot: "bg-sky-500" },
+  member_suggestion:        { icon: "🔍", dot: "bg-gray-500" },
+  group_join_request:       { icon: "🙋", dot: "bg-amber-500" },
+  group_join_accepted:      { icon: "🎉", dot: "bg-emerald-500" },
+  group_join_declined:      { icon: "🚫", dot: "bg-red-500" },
+  added_to_group:            { icon: "👥", dot: "bg-brand-500" },
+  promoted_to_group_admin:  { icon: "⭐", dot: "bg-yellow-500" },
 };
+const DEFAULT_META = { icon: "🔔", dot: "bg-brand-500" };
 
 function NotifItem({ notif, onRead, onNavigate }) {
-  const icon   = NOTIF_ICONS[notif.type] || "🔔";
+  const meta   = NOTIF_META[notif.type] || DEFAULT_META;
   const sender = notif.sender;
+  const unread = !notif.isRead;
 
   return (
     <button
       type="button"
       onClick={() => { onRead(notif._id); onNavigate(notif.url || "/"); }}
-      className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition text-left ${
-        !notif.isRead ? "bg-brand-500/5 border-l-2 border-brand-500" : "border-l-2 border-transparent"
+      className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition ${
+        unread ? "bg-brand-500/[0.08] hover:bg-brand-500/[0.14]" : "hover:bg-white/[0.05]"
       }`}
     >
-      {/* Avatar / icon */}
-      <div className="flex-shrink-0 relative mt-0.5">
+      {/* Avatar + type-badge corner icon */}
+      <div className="flex-shrink-0 relative">
         {sender?.avatar ? (
-          <img src={sender.avatar} alt={sender.fullName}
-            className="w-9 h-9 rounded-full object-cover"/>
+          <img src={sender.avatar} alt={sender.fullName || "User"}
+            className={`w-12 h-12 rounded-full object-cover ring-2 ${unread ? "ring-brand-500/60" : "ring-white/10"}`}/>
         ) : (
-          <div className="w-9 h-9 rounded-full bg-brand-600/20 flex items-center justify-center text-lg">
-            {icon}
+          <div className="w-12 h-12 rounded-full bg-navy-700 flex items-center justify-center text-xl ring-2 ring-white/10">
+            {meta.icon}
           </div>
         )}
-        {!notif.isRead && (
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-500 rounded-full border border-navy-900"/>
-        )}
+        <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[11px] ring-2 ring-navy-900 ${meta.dot}`}>
+          {meta.icon}
+        </span>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-white line-clamp-1">{notif.title}</p>
-          {/* ✅ NEW: count badge — jab isi conversation ke multiple messages group hue ho */}
+        <div className="flex items-center justify-between gap-2">
+          <p className={`text-sm leading-tight truncate ${unread ? "font-bold text-white" : "font-semibold text-gray-300"}`}>
+            {notif.title}
+          </p>
           {notif.count > 1 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-bold flex-shrink-0">
+            <span className="text-[10px] min-w-[18px] h-[18px] px-1 rounded-full bg-brand-500 text-white font-bold flex items-center justify-center flex-shrink-0">
               {notif.count}
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{notif.body}</p>
-        <p className="text-[10px] text-gray-600 mt-1">
+        <p className={`text-[13px] line-clamp-2 mt-0.5 ${unread ? "text-gray-200" : "text-gray-500"}`}>
+          {notif.body}
+        </p>
+        <p className="text-[11px] text-gray-500 mt-1 font-medium">
           {new Date(notif.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ·{" "}
           {new Date(notif.createdAt).toLocaleDateString()}
         </p>
       </div>
+
+      {unread && notif.count <= 1 && (
+        <span className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-brand-500 self-start mt-1.5" />
+      )}
     </button>
   );
 }
@@ -227,24 +245,24 @@ export default function NotificationBell() {
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#0f0f0f] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[200]">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-navy-800 border border-white/10 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-[200]">
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-navy-850">
             <div>
-              <h3 className="font-bold text-sm">Notifications</h3>
-              {unread > 0 && <p className="text-[10px] text-brand-400">{unread} unread</p>}
+              <h3 className="font-bold text-sm text-white">Notifications</h3>
+              {unread > 0 && <p className="text-[11px] text-brand-300 font-semibold mt-0.5">{unread} unread</p>}
             </div>
             {unread > 0 && (
               <button type="button" onClick={handleReadAll}
-                className="text-[10px] text-brand-400 hover:text-brand-300 font-semibold transition px-2 py-1 rounded-lg hover:bg-brand-500/10">
+                className="text-[11px] text-brand-300 hover:text-white font-semibold transition px-2.5 py-1 rounded-lg hover:bg-brand-500 bg-brand-500/10 border border-brand-500/30">
                 Mark all read
               </button>
             )}
           </div>
 
           {/* List */}
-          <div className="max-h-[400px] overflow-y-auto divide-y divide-white/5">
+          <div className="max-h-[420px] overflow-y-auto divide-y divide-white/5">
             {loading && notifs.length === 0 && (
               <div className="flex justify-center py-8">
                 <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/>
@@ -252,9 +270,12 @@ export default function NotificationBell() {
             )}
 
             {!loading && notifs.length === 0 && (
-              <div className="text-center py-10">
-                <p className="text-2xl mb-2">🔔</p>
-                <p className="text-gray-500 text-sm">you don't have any notifications</p>
+              <div className="text-center py-12 px-6">
+                <div className="w-12 h-12 rounded-full bg-brand-500/10 flex items-center justify-center text-2xl mx-auto mb-3">
+                  🔔
+                </div>
+                <p className="text-white text-sm font-semibold mb-0.5">All caught up!</p>
+                <p className="text-gray-500 text-xs">No notifications yet</p>
               </div>
             )}
 
@@ -264,7 +285,7 @@ export default function NotificationBell() {
 
             {hasMore && notifs.length > 0 && (
               <button type="button" onClick={loadMore} disabled={loading}
-                className="w-full py-3 text-xs text-brand-400 hover:text-brand-300 hover:bg-white/5 transition font-semibold">
+                className="w-full py-3 text-xs text-brand-300 hover:text-white hover:bg-brand-500/10 transition font-semibold">
                 {loading ? "Loading..." : "Load more"}
               </button>
             )}
@@ -272,9 +293,9 @@ export default function NotificationBell() {
 
           {/* Footer */}
           {notifs.length > 0 && (
-            <div className="border-t border-white/10 px-4 py-2 text-center">
+            <div className="border-t border-white/10 px-4 py-2.5 text-center bg-navy-850">
               <button type="button" onClick={() => { handleNavigate("/notifications"); }}
-                className="text-xs text-gray-500 hover:text-white transition">
+                className="text-xs text-brand-300 hover:text-white font-semibold transition">
                 View all notifications
               </button>
             </div>
