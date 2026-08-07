@@ -1,6 +1,5 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
 import api from "../lib/api";
 
 export default function Signup() {
@@ -13,26 +12,23 @@ export default function Signup() {
 
   const navigate = useNavigate();
 
-  // 🆕 FIX: authController.js ab signup pe ek REAL JWT + user object bhejta
-  // hai (pehle "your-jwt-token-here" jaisa placeholder tha, kaam ka nahi
-  // tha). Ab isi token se seedha auto-login kar dete hain — user ko signup
-  // ke baad dobara /login pe jaake password type nahi karna padega.
-  const { setUser } = useContext(AuthContext);
+  // FIX (Part 4 — email verification): backend ab signup pe token nahi
+  // deta — account isEmailVerified:false state me banta hai aur OTP email
+  // bhejta hai. Login/auto-login ab /verify-otp complete hone ke baad
+  // hoga (verify-email endpoint hi token deta hai), yahan nahi.
 
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('api/auth/signup', formData);
+      const res = await api.post('/api/auth/signup', formData);
 
-      if (res.data.token) {
-        localStorage.setItem('token', res.data.token);
-        setUser(res.data.user);
-        navigate("/profile-setup");
-      } else {
-        // Fallback — agar kabhi backend token na bheje
-        alert("Signup Successful! Please Login.");
-        navigate("/login");
-      }
+      // No token expected here anymore — go straight to OTP entry.
+      navigate("/verify-otp", {
+        state: {
+          email: formData.email,
+          message: res.data.message || "Check your email for a verification code.",
+        },
+      });
     } catch (err) {
       alert(err.response?.data?.msg || "Signup Failed");
     }

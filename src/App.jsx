@@ -37,6 +37,10 @@ import MarketplacePage    from "./pages/digitalProducts/MarketplacePage";
 import ProductDetailPage  from "./pages/digitalProducts/ProductDetailPage";
 import MyLibraryPage      from "./pages/digitalProducts/MyLibraryPage";
 
+
+
+import VerifyOtp from "./pages/VerifyOtp";
+
 export default function App() {
   return (
     <AuthProvider>
@@ -46,6 +50,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+
           <Route path="/profile" element={<ProfileView />} />
           <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/profile/:userId" element={<PublicProfile />} />
