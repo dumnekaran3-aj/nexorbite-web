@@ -20,7 +20,7 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/api/auth/signup', formData);
+      const res = await api.post('api/auth/signup', formData);
 
       // No token expected here anymore — go straight to OTP entry.
       navigate("/verify-otp", {

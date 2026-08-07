@@ -32,7 +32,7 @@ export default function VerifyOtp() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/api/auth/verify-email", { email, otp: fullOtp });
+      const res = await api.post("api/auth/verify-email", { email, otp: fullOtp });
 
       // Backend's verify-email already returns a token + user on success —
       // no separate /signin call needed, same pattern the old signup flow
