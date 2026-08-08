@@ -29,6 +29,19 @@ export default function Login() {
         alert("Backend se token nahi mila!");
       }
     } catch (err) {
+      // FIX (Part 4 — email verification): backend returns 403 +
+      // needsVerification:true if the account exists/password is right
+      // but the email hasn't been OTP-verified yet. Send them straight
+      // to the OTP screen instead of a generic "Login Failed" alert.
+      if (err.response?.status === 403 && err.response?.data?.needsVerification) {
+        navigate("/verify-otp", {
+          state: {
+            email,
+            message: err.response.data.message || "Please verify your email to continue.",
+          },
+        });
+        return;
+      }
       alert(err.response?.data?.message || "Login Failed");
     }
   };
@@ -59,6 +72,9 @@ export default function Login() {
               className="w-full bg-navy-900 border border-white/10 rounded-lg p-3 text-white focus:border-brand-500 outline-none"
               required
             />
+            <div className="text-right mt-1">
+              <Link to="/forgot-password" className="text-brand-500 text-sm hover:underline">Forgot password?</Link>
+            </div>
           </div>
           <button 
             type="submit" 

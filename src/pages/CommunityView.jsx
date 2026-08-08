@@ -17,7 +17,11 @@ import ChatPanel, { Icon, RoleBadge, ImageModal } from "../components/ChatPanel"
 import GroupChatPanel from "../components/GroupChatPanel";
 import CreateGroupModal from "../components/CreateGroupModal";
 import { getGroups } from "../lib/group.api";
-import ProductActions from "../components/digitalproducts/ProductActions";
+// FIX (Issue #4): ab Home page jaisa hi shared feed-post component use ho
+// raha hai — pehle yahan alag chota grid-card tha jisme likes/share bhi
+// missing the (backend hi wo fields nahi bhejta tha — ab EcoFeed pipe fix
+// ho chuka hai).
+import ProductFeedPost from "../components/digitalproducts/ProductFeedPost";
 
 // ─── GroupCard (WhatsApp-style — deliberately distinct from MemberCard /
 // friend-request cards: square-ish avatar frame + member-count subtitle,
@@ -104,6 +108,9 @@ function GroupJoinPrompt({ group, onClose, onRequested, showToast }) {
 }
 
 // ─── FeedTab ──────────────────────────────────────────────────────────────
+// FIX (Issue #4): ab items backend se FLAT shape me aate hain (pehle
+// item.product.* nested tha) — EcoFeed pipe fix ke baad seedha ProductFeedPost
+// ko pass kiya ja sakta hai, bilkul Home page jaisa.
 function FeedTab({ navigate, collegeQS }) {
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,47 +132,14 @@ function FeedTab({ navigate, collegeQS }) {
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"/></div>;
   if (!items.length) return <div className="text-center py-16"><div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">{Icon.shop}</div><p className="text-gray-500 text-sm">No products in feed yet.</p></div>;
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {items.map((item, i) => {
-        const p = item.product || {};
-        return (
-          <div
-            key={item._id||i}
-            onClick={() => p._id && navigate(`/marketplace/${p._id}`)}
-            className={`bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-brand-500/50 transition ${p._id ? "cursor-pointer" : ""}`}
-          >
-            {p.thumbnailUrl && <img src={p.thumbnailUrl} alt={p.title} className="w-full h-40 object-cover"/>}
-            <div className="p-4">
-              <span className="text-brand-400 text-[10px] font-bold uppercase tracking-widest">{p.branch}</span>
-              <h4 className="font-semibold text-sm mt-1 mb-1 line-clamp-1">{p.title}</h4>
-              <p className="text-gray-500 text-xs line-clamp-2 mb-3">{p.description}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-brand-400 font-bold text-sm">{p.isPaid ? `₹${p.price}` : "Free"}</span>
-                <div className="flex items-center gap-3 text-xs text-gray-600"><span>{p.salesCount||0} sold</span><span>{p.viewCount||0} views</span></div>
-              </div>
-              {/* LIKE/SHARE (new) — ProductActions stops propagation itself,
-                  so tapping these never triggers the card's navigate above */}
-              {p._id && (
-                <div className="mt-3 pt-3 border-t border-white/5">
-                  <ProductActions
-                    productId={p._id}
-                    initialLiked={p.isLiked}
-                    initialLikeCount={p.likeCount}
-                    initialShareCount={p.shareCount}
-                    size="sm"
-                  />
-                </div>
-              )}
-              {item.seller && (
-                <button type="button" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${item.seller._id}`); }} className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 w-full text-left hover:opacity-80 transition">
-                  <img src={item.seller.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(item.seller.fullName||"U")}&background=7c3aed&color=fff`} alt={item.seller.fullName} className="w-6 h-6 rounded-full object-cover"/>
-                  <span className="text-xs text-gray-500">{item.seller.fullName}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+    <div>
+      {items.map((p) => (
+        <ProductFeedPost
+          key={p._id}
+          p={p}
+          onOpen={() => p._id && navigate(`/marketplace/${p._id}`)}
+        />
+      ))}
     </div>
   );
 }

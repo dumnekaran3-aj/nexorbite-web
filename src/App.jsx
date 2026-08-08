@@ -8,6 +8,13 @@ import Footer from "./components/layout/Footer";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Sigup";
+
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+
+
+
 import ProfileSetup from "./pages/ProfileSetup";
 import ProfileView from "./pages/ProfileView";
 import PublicProfile from "./pages/publicProfile"; // Important: Dono versions se merge karein
@@ -52,13 +59,22 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
 
           <Route path="/verify-otp" element={<VerifyOtp />} />
+           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
+
 
           <Route path="/profile" element={<ProfileView />} />
           <Route path="/profile-setup" element={<ProfileSetup />} />
+          
           <Route path="/profile/:userId" element={<PublicProfile />} />
+
           <Route path="/community/:id" element={<CommunityView />} />
           <Route path="/community" element={<CommunityView />} />
+
+
           <Route path="/my-communities" element={<MyCommunities />} />
+
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
